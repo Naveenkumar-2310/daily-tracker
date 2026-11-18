@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: yarn && yarn build
+    buildCommand: yarn install --production=false && yarn build
     startCommand: yarn start
     envVars:
       - key: NODE_ENV

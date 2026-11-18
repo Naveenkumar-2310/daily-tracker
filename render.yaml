@@ -5,7 +5,7 @@ services:
     plan: free
     region: singapore
     rootDir: backend
-    buildCommand: yarn && yarn build
+    buildCommand: yarn install --production=false && yarn build
     startCommand: yarn start
     envVars:
       - key: NODE_ENV
@@ -14,3 +14,4 @@ services:
         value: 5001
       - key: DB_CONNECTION_STRING
         sync: false
+
