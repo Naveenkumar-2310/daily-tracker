@@ -13,6 +13,34 @@ Notifications.setNotificationHandler({
   }),
 });
 
+/**
+ * Robustly parses time strings in either 24-hour ("21:00", "08:30") or 12-hour ("9 PM", "09:00 PM", "8:30 AM")
+ */
+export function parseHourMinute(timeStr: string): { hour: number; minute: number } | null {
+  if (!timeStr) return null;
+  const clean = timeStr.trim();
+  const isPM = /pm/i.test(clean);
+  const isAM = /am/i.test(clean);
+
+  // Extract digits for hour and optional minute
+  const match = clean.match(/(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return null;
+
+  let hour = parseInt(match[1], 10);
+  const minute = match[2] ? parseInt(match[2], 10) : 0;
+
+  if (isNaN(hour) || isNaN(minute)) return null;
+
+  // Convert to 24-hour standard if AM/PM was present
+  if (isPM && hour < 12) {
+    hour += 12;
+  } else if (isAM && hour === 12) {
+    hour = 0;
+  }
+
+  return { hour, minute };
+}
+
 export const NotificationService = {
   /**
    * Request OS Notification Permissions & setup Android High-Priority Channel
@@ -57,13 +85,13 @@ export const NotificationService = {
   },
 
   /**
-   * Schedule a daily recurring pill alarm at the specified HH:mm time
+   * Schedule a daily recurring pill alarm at the specified HH:mm time (e.g. 21:00 or 9 PM)
    */
   async schedulePillReminder(params: {
     medicineId: string;
     medicineName: string;
     strength: string;
-    reminderTime: string; // e.g. "08:30"
+    reminderTime: string; // e.g. "21:00" or "09:00 PM"
     foodRelation?: string;
     alertType?: "NOTIFICATION" | "ALARM";
   }): Promise<string | null> {
@@ -71,11 +99,9 @@ export const NotificationService = {
       const hasPermission = await this.setupPermissionsAndChannels();
       if (!hasPermission) return null;
 
-      const [hourStr, minStr] = params.reminderTime.split(":");
-      const hour = parseInt(hourStr, 10);
-      const minute = parseInt(minStr, 10);
-
-      if (isNaN(hour) || isNaN(minute)) return null;
+      const parsed = parseHourMinute(params.reminderTime);
+      if (!parsed) return null;
+      const { hour, minute } = parsed;
 
       // Cancel existing notification for this medicine if any
       await this.cancelReminder(params.medicineId);
@@ -87,12 +113,12 @@ export const NotificationService = {
             ? "🥗 Take during meal"
             : "🍽️ Take after food";
 
-      // Schedule daily notification
+      // Schedule daily recurring notification at the exact hour:minute
       const notificationId = await Notifications.scheduleNotificationAsync({
         identifier: `pill-${params.medicineId}`,
         content: {
           title: `💊 Routine Reminder: ${params.medicineName}`,
-          body: `Dose: ${params.strength} • ${foodNotice}. Don't forget your scheduled intake!`,
+          body: `Dose: ${params.strength} • ${foodNotice}. Time for your scheduled intake!`,
           sound: "default",
           priority: Notifications.AndroidNotificationPriority.MAX,
           data: {

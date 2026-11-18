@@ -12,7 +12,7 @@ import { useDoubleBackToExit } from "../../hooks/useDoubleBackToExit";
 import { RootNavigationProp } from "../../navigation/types";
 import { useTodayPillsQuery, useMarkPillMutation, useRestockMedicineMutation, useStreakStatsQuery } from "../../hooks/apiHooks";
 import { extractErrorMessage } from "../../utils/errorUtils";
-import { NotificationService } from "../../services/notificationService";
+import { NotificationService, parseHourMinute } from "../../services/notificationService";
 
 export const PillHomeScreen: React.FC = () => {
   const navigation = useNavigation<RootNavigationProp>();
@@ -94,11 +94,11 @@ export const PillHomeScreen: React.FC = () => {
   const isDoseOverdue = (reminderTimeStr: string) => {
     if (!isToday) return false;
     try {
+      const parsed = parseHourMinute(reminderTimeStr);
+      if (!parsed) return false;
       const now = new Date();
-      const parts = reminderTimeStr.split(":");
-      if (parts.length < 2) return false;
       const scheduled = new Date();
-      scheduled.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+      scheduled.setHours(parsed.hour, parsed.minute, 0, 0);
       return now > scheduled;
     } catch {
       return false;
@@ -261,6 +261,7 @@ export const PillHomeScreen: React.FC = () => {
               ]}
               rightAction={
                 <Chip
+                  compact
                   style={[
                     styles.statusChip,
                     isTaken
@@ -280,44 +281,50 @@ export const PillHomeScreen: React.FC = () => {
                           ? "#D97706"
                           : "#64748B",
                     fontWeight: "700",
-                    fontSize: 11,
+                    fontSize: 10.5,
                   }}
                 >
                   {isTaken
-                    ? "✓ COMPLETED"
+                    ? "✓ TAKEN"
                     : isMissed
                       ? "✕ MISSED"
                       : isOverdue
-                        ? "⏰ OVERDUE"
+                        ? "⏰ LATE"
                         : "PENDING"}
                 </Chip>
               }
             >
-              {/* Food Relation Protocol & Low Stock Tags */}
-              <View style={styles.cardHeaderMeta}>
-                <Chip
-                  icon="silverware-fork-knife"
+              {/* Food Protocol & Low Stock Badges (Clean Responsive Badges) */}
+              <View style={styles.tagBadgeRow}>
+                <View
                   style={[
-                    styles.foodChip,
-                    { backgroundColor: theme.colors.surfaceVariant },
+                    styles.tagBadge,
+                    {
+                      backgroundColor: theme.colors.surfaceVariant,
+                      borderColor: theme.colors.cardBorder || theme.colors.outline,
+                    },
                   ]}
-                  textStyle={[styles.foodChipText, { color: theme.colors.subText || "#475569" }]}
                 >
-                  {item.foodRelation === "BEFORE_FOOD"
-                    ? "🥣 Before Food"
-                    : item.foodRelation === "WITH_FOOD"
-                      ? "🥗 With Food"
-                      : "🍽️ After Food"}
-                </Chip>
+                  <Text
+                    style={[
+                      styles.tagBadgeText,
+                      { color: theme.colors.onSurface },
+                    ]}
+                  >
+                    {item.foodRelation === "BEFORE_FOOD"
+                      ? "🥣 Before Food"
+                      : item.foodRelation === "WITH_FOOD"
+                        ? "🥗 With Food"
+                        : "🍽️ After Food"}
+                  </Text>
+                </View>
 
                 {stock <= 2 && (
-                  <Chip
-                    icon="alert-circle"
-                    style={styles.urgentStockChip}
-                    textStyle={styles.urgentStockChipText}
-                  >
-                    {stock <= 0 ? "Empty Strip" : `Only ${stock} Left`}
-                  </Chip>
+                  <View style={[styles.tagBadge, styles.urgentStockBadge]}>
+                    <Text style={styles.urgentStockBadgeText}>
+                      {stock <= 0 ? "⚠️ Empty Strip" : `⚠️ Only ${stock} Left`}
+                    </Text>
+                  </View>
                 )}
               </View>
 
@@ -528,26 +535,31 @@ const styles = StyleSheet.create({
     color: "#9A3412",
     fontSize: 11.5,
   },
-  cardHeaderMeta: {
+  tagBadgeRow: {
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
     gap: 6,
-    marginBottom: 8,
+    marginVertical: 6,
   },
-  foodChip: {
-    height: 26,
+  tagBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
   },
-  foodChipText: {
-    fontSize: 11,
+  tagBadgeText: {
+    fontSize: 11.5,
     fontWeight: "600",
   },
-  urgentStockChip: {
-    height: 26,
+  urgentStockBadge: {
     backgroundColor: "#FEE2E2",
+    borderColor: "#FECACA",
   },
-  urgentStockChipText: {
-    fontSize: 11,
+  urgentStockBadgeText: {
+    fontSize: 11.5,
     color: "#DC2626",
     fontWeight: "700",
   },
