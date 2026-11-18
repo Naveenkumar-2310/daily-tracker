@@ -1,5 +1,5 @@
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { Platform, Alert, Linking } from "react-native";
 
 // Set foreground notification handler so alarms display and sound even while app is open
 Notifications.setNotificationHandler({
@@ -42,6 +42,48 @@ export function parseHourMinute(timeStr: string): { hour: number; minute: number
 }
 
 export const NotificationService = {
+  /**
+   * Check if notification permission is currently granted
+   */
+  async isPermissionGranted(): Promise<boolean> {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      return status === "granted";
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Open the phone's native Settings screen for this app so user can enable notifications
+   */
+  openDeviceSettings(): void {
+    if (Platform.OS === "ios") {
+      Linking.openURL("app-settings:").catch(() => Linking.openSettings());
+    } else {
+      Linking.openSettings().catch(() => {});
+    }
+  },
+
+  /**
+   * Prompt user with an interactive modal dialog to open system settings directly
+   */
+  promptToOpenSettings(): void {
+    Alert.alert(
+      "Notifications Disabled 🔔",
+      "To receive your daily pill alarms, loud chimes, and reminder banners, please allow Notifications for Daily Tracker in your phone settings.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Open Settings ⚙️",
+          style: "default",
+          onPress: () => this.openDeviceSettings(),
+        },
+      ],
+      { cancelable: true }
+    );
+  },
+
   /**
    * Request OS Notification Permissions & setup Android High-Priority Channel
    */
@@ -159,7 +201,10 @@ export const NotificationService = {
   async triggerTestAlarmNow(): Promise<boolean> {
     try {
       const hasPermission = await this.setupPermissionsAndChannels();
-      if (!hasPermission) return false;
+      if (!hasPermission) {
+        this.promptToOpenSettings();
+        return false;
+      }
 
       await Notifications.scheduleNotificationAsync({
         content: {

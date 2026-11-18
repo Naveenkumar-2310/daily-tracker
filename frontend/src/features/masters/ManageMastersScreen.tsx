@@ -147,13 +147,11 @@ export const ManageMastersScreen: React.FC = () => {
 
   // --- Medicine Handlers ---
   const handleTestAlarm = async () => {
-    showLoader("Triggering test alarm chime...");
+    showLoader("Checking notification status...");
     const ok = await NotificationService.triggerTestAlarmNow();
     hideLoader();
     if (ok) {
       showSuccess("🔔 Test alarm triggered! Listen for device chime in 2s.");
-    } else {
-      showError("Please enable Notification permissions in Android Settings.");
     }
   };
 

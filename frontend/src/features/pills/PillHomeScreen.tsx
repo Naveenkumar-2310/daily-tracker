@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { View, StyleSheet, RefreshControl, TouchableOpacity } from "react-native";
 import { Text, Chip, useTheme } from "react-native-paper";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { ExtendedTheme } from "../../theme/theme";
 import { AppCard } from "../../components/common/AppCard";
 import { AppButton } from "../../components/common/AppButton";
@@ -26,6 +27,7 @@ export const PillHomeScreen: React.FC = () => {
     new Date().toISOString().slice(0, 10),
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [hasNotificationPermission, setHasNotificationPermission] = useState(true);
 
   // TanStack React Query hooks
   const { data: pillData, isLoading, refetch } = useTodayPillsQuery(selectedDate);
@@ -37,6 +39,9 @@ export const PillHomeScreen: React.FC = () => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
+      const isGranted = await NotificationService.isPermissionGranted();
+      setHasNotificationPermission(isGranted);
+
       const res = await refetch();
       if (res.data?.medicines && res.data.medicines.length > 0) {
         NotificationService.syncAllMedicines(res.data.medicines);
@@ -75,13 +80,11 @@ export const PillHomeScreen: React.FC = () => {
   };
 
   const handleTestAlarm = async () => {
-    showLoader("Queueing test alarm in 2s...");
+    showLoader("Checking notification status...");
     try {
       const success = await NotificationService.triggerTestAlarmNow();
       if (success) {
         showSuccess("🔔 Test chime queued! Rings in 2 seconds. Check speaker & vibration.");
-      } else {
-        showError("Please enable notification permissions in your phone settings.");
       }
     } catch (err: any) {
       showError(extractErrorMessage(err, "Failed to trigger alarm"));
@@ -151,6 +154,47 @@ export const PillHomeScreen: React.FC = () => {
           Test Alarm
         </AppButton>
       </View>
+
+      {/* Notification Disabled Alert Banner with Direct Open Settings Button */}
+      {!hasNotificationPermission && (
+        <View
+          style={[
+            styles.permWarningBanner,
+            theme.isDark && {
+              backgroundColor: "rgba(220, 38, 38, 0.15)",
+              borderColor: "#DC2626",
+            },
+          ]}
+        >
+          <MaterialCommunityIcons name="bell-off" size={20} color="#DC2626" />
+          <View style={{ flex: 1, marginHorizontal: 8 }}>
+            <Text
+              style={[
+                styles.permWarningTitle,
+                theme.isDark && { color: "#FCA5A5" },
+              ]}
+            >
+              Notifications are Disabled
+            </Text>
+            <Text
+              style={[
+                styles.permWarningSub,
+                theme.isDark && { color: "#F87171" },
+              ]}
+            >
+              Alarms won't chime until notifications are allowed in settings
+            </Text>
+          </View>
+          <AppButton
+            mode="contained"
+            compact
+            onPress={() => NotificationService.openDeviceSettings()}
+            style={styles.openSettingsBtn}
+          >
+            Settings
+          </AppButton>
+        </View>
+      )}
 
       {/* Adherence Streak Banner - Clickable to Calendar */}
       <TouchableOpacity
@@ -691,5 +735,28 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     paddingHorizontal: 6,
     paddingVertical: 2,
+  },
+  permWarningBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 12,
+  },
+  permWarningTitle: {
+    fontWeight: "700",
+    fontSize: 12.5,
+    color: "#991B1B",
+  },
+  permWarningSub: {
+    fontSize: 11,
+    color: "#B91C1C",
+    marginTop: 1,
+  },
+  openSettingsBtn: {
+    backgroundColor: "#DC2626",
   },
 });
