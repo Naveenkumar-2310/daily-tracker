@@ -47,8 +47,8 @@ export const NotificationService = {
    */
   async isPermissionGranted(): Promise<boolean> {
     try {
-      const { status } = await Notifications.getPermissionsAsync();
-      return status === "granted";
+      const res = await Notifications.getPermissionsAsync();
+      return res.granted === true || res.status === "granted";
     } catch {
       return false;
     }
@@ -89,35 +89,37 @@ export const NotificationService = {
    */
   async setupPermissionsAndChannels(): Promise<boolean> {
     try {
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
+      const res = await Notifications.getPermissionsAsync();
+      let isGranted = res.granted === true || res.status === "granted";
 
-      if (existingStatus !== "granted") {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+      if (!isGranted) {
+        const req = await Notifications.requestPermissionsAsync();
+        isGranted = req.granted === true || req.status === "granted";
       }
 
-      if (finalStatus !== "granted") {
+      if (!isGranted) {
         return false;
       }
 
       if (Platform.OS === "android") {
-        await Notifications.setNotificationChannelAsync(
-          "pill-reminders-alarm",
-          {
-            name: "Pill Reminders & Alarms",
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 500, 250, 500],
-            lightColor: "#4F46E5",
-            sound: "default",
-            enableLights: true,
-            enableVibrate: true,
-            lockscreenVisibility:
-              Notifications.AndroidNotificationVisibility.PUBLIC,
-            bypassDnd: true,
-          },
-        );
+        try {
+          await Notifications.setNotificationChannelAsync(
+            "pill-reminders-alarm",
+            {
+              name: "Pill Reminders & Alarms",
+              importance: Notifications.AndroidImportance.MAX,
+              vibrationPattern: [0, 500, 250, 500],
+              lightColor: "#4F46E5",
+              sound: "default",
+              enableLights: true,
+              enableVibrate: true,
+              lockscreenVisibility:
+                Notifications.AndroidNotificationVisibility.PUBLIC,
+            },
+          );
+        } catch (channelErr) {
+          console.warn("Channel setup note:", channelErr);
+        }
       }
 
       return true;

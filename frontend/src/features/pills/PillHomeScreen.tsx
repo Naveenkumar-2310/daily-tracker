@@ -80,16 +80,16 @@ export const PillHomeScreen: React.FC = () => {
   };
 
   const handleTestAlarm = async () => {
-    showLoader("Checking notification status...");
     try {
       const success = await NotificationService.triggerTestAlarmNow();
       if (success) {
+        setHasNotificationPermission(true);
         showSuccess("🔔 Test chime queued! Rings in 2 seconds. Check speaker & vibration.");
+      } else {
+        setHasNotificationPermission(false);
       }
     } catch (err: any) {
       showError(extractErrorMessage(err, "Failed to trigger alarm"));
-    } finally {
-      hideLoader();
     }
   };
 
