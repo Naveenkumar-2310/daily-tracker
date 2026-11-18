@@ -5,9 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1E1B4B"
     },
     "ios": {
       "supportsTablet": true
@@ -16,7 +18,8 @@
       "package": "com.naveen.dailytracker",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1E1B4B"
       },
       "permissions": [
         "CAMERA",
@@ -26,7 +29,9 @@
         "SCHEDULE_EXACT_ALARM",
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -39,6 +44,11 @@
       "expo-notifications",
       "expo-status-bar",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d4fd5d03-cb3d-4061-b2bb-13244a2159ec"
+      }
+    }
   }
 }
