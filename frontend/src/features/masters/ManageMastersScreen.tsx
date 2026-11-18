@@ -146,13 +146,6 @@ export const ManageMastersScreen: React.FC = () => {
   const [deletingVehicle, setDeletingVehicle] = useState<any | null>(null);
 
   // --- Medicine Handlers ---
-  const handleTestAlarm = async () => {
-    const ok = await NotificationService.triggerTestAlarmNow();
-    if (ok) {
-      showSuccess("🔔 Test alarm triggered! Listen for device chime in 2s.");
-    }
-  };
-
   const onAddMedicine = async (data: MedicineFormData) => {
     const stockNum = parseInt(data.currentStock, 10) || 1;
     const isSingle = stockNum <= 1;
@@ -372,16 +365,6 @@ export const ManageMastersScreen: React.FC = () => {
 
       {tab === "medicines" ? (
         <>
-          {/* Quick Alarm Test Trigger */}
-          <AppButton
-            mode="contained-tonal"
-            icon="bell-ring-outline"
-            onPress={handleTestAlarm}
-            style={{ marginVertical: 8 }}
-          >
-            🔔 Test Device Alarm & Chime (2s Trigger)
-          </AppButton>
-
           {/* Add Tablet Card with React Hook Form */}
           <AppCard
             title="Add Prescription / Tablet"

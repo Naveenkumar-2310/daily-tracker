@@ -4,11 +4,10 @@ import { Platform, Alert, Linking } from "react-native";
 // Set foreground notification handler so alarms display and sound even while app is open
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
     priority: Notifications.AndroidNotificationPriority.MAX,
   }),
 });
@@ -110,7 +109,6 @@ export const NotificationService = {
               importance: Notifications.AndroidImportance.MAX,
               vibrationPattern: [0, 500, 250, 500],
               lightColor: "#4F46E5",
-              sound: "default",
               enableLights: true,
               enableVibrate: true,
               lockscreenVisibility:
@@ -195,36 +193,6 @@ export const NotificationService = {
         `pill-${medicineId}`,
       );
     } catch {}
-  },
-
-  /**
-   * Immediately trigger a test alarm in 2 seconds so the user can verify sound and banner
-   */
-  async triggerTestAlarmNow(): Promise<boolean> {
-    try {
-      const hasPermission = await this.setupPermissionsAndChannels();
-      if (!hasPermission) {
-        this.promptToOpenSettings();
-        return false;
-      }
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "🔔 Test Alarm: Pills & Petrol Tracker",
-          body: "Your alarm and notification chimes are working properly! 🎉",
-          sound: "default",
-          priority: Notifications.AndroidNotificationPriority.MAX,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 2,
-          channelId: "pill-reminders-alarm",
-        },
-      });
-      return true;
-    } catch {
-      return false;
-    }
   },
 
   /**

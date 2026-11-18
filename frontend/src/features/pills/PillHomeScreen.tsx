@@ -83,20 +83,6 @@ export const PillHomeScreen: React.FC = () => {
     }
   };
 
-  const handleTestAlarm = async () => {
-    try {
-      const success = await NotificationService.triggerTestAlarmNow();
-      if (success) {
-        setHasNotificationPermission(true);
-        showSuccess("🔔 Test chime queued! Rings in 2 seconds. Check speaker & vibration.");
-      } else {
-        setHasNotificationPermission(false);
-      }
-    } catch (err: any) {
-      showError(extractErrorMessage(err, "Failed to trigger alarm"));
-    }
-  };
-
   const handleRestock = async (medId: string, medName: string) => {
     showLoader(`Restocking ${medName}...`);
     try {
@@ -140,25 +126,15 @@ export const PillHomeScreen: React.FC = () => {
         />
       }
     >
-      {/* Date Header Controller & Instant Alarm Test */}
+      {/* Date Header Controller */}
       <View style={styles.dateRow}>
-        <View style={{ flex: 1 }}>
-          <AppDatePicker
-            label="Schedule Date"
-            value={selectedDate}
-            onChange={(d) => setSelectedDate(d)}
-            minDate={yesterdayStr}
-            maxDate={todayStr}
-          />
-        </View>
-        <AppButton
-          mode="outlined"
-          icon="bell-ring-outline"
-          onPress={handleTestAlarm}
-          style={styles.testAlarmBtn}
-        >
-          Test Alarm
-        </AppButton>
+        <AppDatePicker
+          label="Schedule Date"
+          value={selectedDate}
+          onChange={(d) => setSelectedDate(d)}
+          minDate={yesterdayStr}
+          maxDate={todayStr}
+        />
       </View>
 
       {/* Notification Disabled Alert Banner with Direct Open Settings Button */}
@@ -715,12 +691,6 @@ const styles = StyleSheet.create({
   },
   takeBtn: {
     flex: 1,
-  },
-  testAlarmBtn: {
-    marginBottom: 6,
-    height: 48,
-    justifyContent: "center",
-    borderColor: "#C7D2FE",
   },
   takenNoticeRow: {
     flexDirection: "row",
