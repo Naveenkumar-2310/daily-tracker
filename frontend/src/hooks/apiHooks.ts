@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../api/client/apiClient';
+import axiosInstance from '../api/client/axiosInstance';
 import {
   CreateMedicineDto,
   UpdateMedicineDto,
@@ -77,6 +78,20 @@ export function useDeleteMedicineMutation() {
   });
 }
 
+export function useRestockMedicineMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, amount = 10 }: { id: string; amount?: number }) => {
+      const res = await axiosInstance.post(`/api/v1/medicines/${id}/restock`, { amount });
+      return res.data?.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['medicines'] });
+      queryClient.invalidateQueries({ queryKey: ['todayPills'] });
+    },
+  });
+}
+
 // ==================== PILL DOSES & INTAKE ====================
 
 export function useTodayPillsQuery(date?: string) {
@@ -85,6 +100,16 @@ export function useTodayPillsQuery(date?: string) {
     queryFn: async () => {
       const res = await apiClient.getTodayPillStatus(date);
       return res.data?.data;
+    },
+  });
+}
+
+export function useStreakStatsQuery(medicineId?: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.pillStats(medicineId),
+    queryFn: async () => {
+      const res = await axiosInstance.get(`/api/v1/pill-logs/stats${medicineId ? `?medicineId=${medicineId}` : ''}`);
+      return res.data?.data || { currentStreakDays: 0, takenThisMonth: 0, missedThisMonth: 0 };
     },
   });
 }

@@ -47,6 +47,7 @@ export interface CreateFuelLogDto {
     'petrolAmount': number;
     'fuelPricePerLitre'?: number;
     'litresFilled'?: number;
+    'isFullTank'?: boolean;
     'notes'?: string;
 }
 export interface CreateMedicine201Response {
@@ -117,6 +118,7 @@ export interface FuelLog {
     'litresFilled': number;
     'distanceCovered'?: number;
     'actualMileage'?: number;
+    'isFullTank'?: boolean;
     'notes'?: string;
     'createdAt'?: string;
 }
@@ -221,9 +223,11 @@ export interface TodayMedicineStatus {
     'strength'?: string;
     'scheduleSlot'?: string;
     'reminderTime'?: string;
+    'foodRelation'?: string;
     'status'?: TodayMedicineStatusStatusEnum;
     'takenAt'?: string;
     'currentStock'?: number;
+    'lowStockAlert'?: number;
 }
 
 export const TodayMedicineStatusStatusEnum = {

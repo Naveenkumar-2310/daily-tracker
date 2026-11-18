@@ -84,6 +84,7 @@ export const ManageMastersScreen: React.FC = () => {
       strength: "",
       scheduleSlot: "MORNING",
       reminderTime: "08:30",
+      foodRelation: "AFTER_FOOD",
       frequency: "DAILY",
       durationDays: "10",
       currentStock: "10",
@@ -122,6 +123,7 @@ export const ManageMastersScreen: React.FC = () => {
   const [editMedStrength, setEditMedStrength] = useState("");
   const [editMedSlot, setEditMedSlot] = useState("MORNING");
   const [editMedTime, setEditMedTime] = useState("08:30");
+  const [editMedFoodRelation, setEditMedFoodRelation] = useState<"BEFORE_FOOD" | "AFTER_FOOD" | "WITH_FOOD">("AFTER_FOOD");
   const [editMedStock, setEditMedStock] = useState("10");
 
   // Medicine Delete State
@@ -154,7 +156,7 @@ export const ManageMastersScreen: React.FC = () => {
         dosageForm: "Tablet",
         scheduleSlot: data.scheduleSlot as any,
         reminderTime: data.reminderTime.trim() || "08:30",
-        foodRelation: "AFTER_FOOD",
+        foodRelation: data.foodRelation || "AFTER_FOOD",
         currentStock: stockNum,
         lowStockAlert: lowStockAlert,
       });
@@ -165,6 +167,7 @@ export const ManageMastersScreen: React.FC = () => {
         strength: "",
         scheduleSlot: "MORNING",
         reminderTime: "08:30",
+        foodRelation: "AFTER_FOOD",
         frequency: "DAILY",
         durationDays: "10",
         currentStock: "10",
@@ -190,6 +193,7 @@ export const ManageMastersScreen: React.FC = () => {
     setEditMedStrength(item.strength);
     setEditMedSlot(item.scheduleSlot || "MORNING");
     setEditMedTime(item.reminderTime || "08:30");
+    setEditMedFoodRelation(item.foodRelation || "AFTER_FOOD");
     setEditMedStock(String(item.currentStock || 10));
   };
 
@@ -209,6 +213,7 @@ export const ManageMastersScreen: React.FC = () => {
           strength: editMedStrength.trim(),
           scheduleSlot: editMedSlot as any,
           reminderTime: editMedTime.trim() || "08:30",
+          foodRelation: editMedFoodRelation,
           currentStock: parseInt(editMedStock, 10) || 10,
         },
       });
@@ -467,6 +472,37 @@ export const ManageMastersScreen: React.FC = () => {
               )}
             />
 
+            {/* Food Relation Protocol */}
+            <Controller
+              control={medControl}
+              name="foodRelation"
+              render={({ field: { onChange, value } }) => (
+                <AppDropdown
+                  label="Food Relation Protocol"
+                  value={value}
+                  options={[
+                    {
+                      label: "🍽️ After Food (Recommended)",
+                      value: "AFTER_FOOD",
+                      subtitle: "Take with or right after food",
+                    },
+                    {
+                      label: "🥣 Before Food (Empty Stomach)",
+                      value: "BEFORE_FOOD",
+                      subtitle: "Take 30 mins before breakfast / meal",
+                    },
+                    {
+                      label: "🥗 With Food / During Meals",
+                      value: "WITH_FOOD",
+                      subtitle: "Take during meals with water",
+                    },
+                  ]}
+                  onSelect={onChange}
+                  helperText="Prevents stomach irritation & optimizes absorption"
+                />
+              )}
+            />
+
             {/* Tablets in Strip */}
             <Controller
               control={medControl}
@@ -627,7 +663,7 @@ export const ManageMastersScreen: React.FC = () => {
                 }
               >
                 <Text variant="bodySmall" style={{ color: "#64748B" }}>
-                  Protocol: After Food • Refill alert threshold: {m.lowStockAlert || 1} tablet remaining
+                  Protocol: {m.foodRelation === "BEFORE_FOOD" ? "🥣 Before Food" : m.foodRelation === "WITH_FOOD" ? "🥗 With Food" : "🍽️ After Food"} • Stock: {m.currentStock} in strip
                 </Text>
               </AppCard>
             ))
@@ -832,6 +868,30 @@ export const ManageMastersScreen: React.FC = () => {
               label="Reminder Time (12-Hour Clock)"
               value={editMedTime}
               onChange={setEditMedTime}
+            />
+
+            <AppDropdown
+              label="Food Relation Protocol"
+              value={editMedFoodRelation}
+              onSelect={(val: any) => setEditMedFoodRelation(val)}
+              options={[
+                {
+                  label: "🍽️ After Food (Recommended)",
+                  value: "AFTER_FOOD",
+                  subtitle: "Take with or right after food",
+                },
+                {
+                  label: "🥣 Before Food (Empty Stomach)",
+                  value: "BEFORE_FOOD",
+                  subtitle: "Take 30 mins before breakfast / meal",
+                },
+                {
+                  label: "🥗 With Food / During Meals",
+                  value: "WITH_FOOD",
+                  subtitle: "Take during meals with water",
+                },
+              ]}
+              helperText="Prevents stomach irritation & optimizes absorption"
             />
 
             <AppTextField

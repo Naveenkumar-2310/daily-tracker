@@ -9,7 +9,7 @@ import { AppKeyboardWrapper } from "../../components/common/AppKeyboardWrapper";
 import { useGlobalUi } from "../../context/GlobalUiContext";
 import { useDoubleBackToExit } from "../../hooks/useDoubleBackToExit";
 import { RootNavigationProp } from "../../navigation/types";
-import { useTodayPillsQuery, useMarkPillMutation } from "../../hooks/apiHooks";
+import { useTodayPillsQuery, useMarkPillMutation, useRestockMedicineMutation, useStreakStatsQuery } from "../../hooks/apiHooks";
 import { extractErrorMessage } from "../../utils/errorUtils";
 
 export const PillHomeScreen: React.FC = () => {
@@ -26,7 +26,9 @@ export const PillHomeScreen: React.FC = () => {
 
   // TanStack React Query hooks
   const { data: pillData, isLoading, refetch } = useTodayPillsQuery(selectedDate);
+  const { data: streakStats } = useStreakStatsQuery();
   const markPillMutation = useMarkPillMutation();
+  const restockMutation = useRestockMedicineMutation();
   const medicines = pillData?.medicines || [];
 
   const onRefresh = useCallback(async () => {
@@ -56,7 +58,7 @@ export const PillHomeScreen: React.FC = () => {
       });
       showSuccess(
         status === "TAKEN"
-          ? "Dose marked as taken!"
+          ? "Dose marked as taken! 🎯"
           : "Marked as missed for this date.",
       );
     } catch (err: any) {
@@ -66,9 +68,36 @@ export const PillHomeScreen: React.FC = () => {
     }
   };
 
+  const handleRestock = async (medId: string, medName: string) => {
+    showLoader(`Restocking ${medName}...`);
+    try {
+      await restockMutation.mutateAsync({ id: medId, amount: 10 });
+      showSuccess(`+10 tablets added to "${medName}" strip! 📦`);
+      refetch();
+    } catch (err: any) {
+      showError(extractErrorMessage(err, "Failed to restock tablet"));
+    } finally {
+      hideLoader();
+    }
+  };
+
   const isToday = selectedDate === new Date().toISOString().slice(0, 10);
   const totalMeds = medicines.length;
   const takenCount = medicines.filter((m) => m.status === "TAKEN").length;
+
+  const isDoseOverdue = (reminderTimeStr: string) => {
+    if (!isToday) return false;
+    try {
+      const now = new Date();
+      const parts = reminderTimeStr.split(":");
+      if (parts.length < 2) return false;
+      const scheduled = new Date();
+      scheduled.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+      return now > scheduled;
+    } catch {
+      return false;
+    }
+  };
 
   return (
     <AppKeyboardWrapper
@@ -90,6 +119,21 @@ export const PillHomeScreen: React.FC = () => {
             value={selectedDate}
             onChange={(d) => setSelectedDate(d)}
           />
+        </View>
+      </View>
+
+      {/* Adherence Streak Banner */}
+      <View style={styles.streakBanner}>
+        <View style={styles.streakIconWrap}>
+          <Text style={{ fontSize: 18 }}>🔥</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="labelLarge" style={styles.streakTitle}>
+            {streakStats?.currentStreakDays || 0}-Day Routine Streak!
+          </Text>
+          <Text variant="bodySmall" style={styles.streakSub}>
+            {streakStats?.takenThisMonth || 0} doses taken on schedule this month
+          </Text>
         </View>
       </View>
 
@@ -142,12 +186,14 @@ export const PillHomeScreen: React.FC = () => {
         medicines.map((item) => {
           const isTaken = item.status === "TAKEN";
           const isMissed = item.status === "MISSED";
+          const stock = item.currentStock ?? 10;
+          const isOverdue = !isTaken && !isMissed && isDoseOverdue(item.reminderTime || "08:30");
 
           return (
             <AppCard
               key={item.medicineId}
-              title={`${item.medicineName} • ${item.strength}`}
-              subtitle={`${item.scheduleSlot} @ ${item.reminderTime} | Strip: ${item.currentStock} left`}
+              title={`${item.medicineName || "Tablet"} • ${item.strength || ""}`}
+              subtitle={`${item.scheduleSlot || "DAILY"} @ ${item.reminderTime || "08:30"} | Strip: ${stock} left`}
               style={[
                 styles.card,
                 isTaken && styles.cardTaken,
@@ -161,33 +207,112 @@ export const PillHomeScreen: React.FC = () => {
                       ? styles.chipTaken
                       : isMissed
                         ? styles.chipMissed
-                        : styles.chipPending,
+                        : isOverdue
+                          ? styles.chipOverdue
+                          : styles.chipPending,
                   ]}
                   textStyle={{
                     color: isTaken
                       ? "#059669"
                       : isMissed
                         ? "#E11D48"
-                        : "#64748B",
+                        : isOverdue
+                          ? "#D97706"
+                          : "#64748B",
                     fontWeight: "700",
                     fontSize: 11,
                   }}
                 >
-                  {isTaken ? "✓ COMPLETED" : isMissed ? "✕ MISSED" : "PENDING"}
+                  {isTaken
+                    ? "✓ COMPLETED"
+                    : isMissed
+                      ? "✕ MISSED"
+                      : isOverdue
+                        ? "⏰ OVERDUE"
+                        : "PENDING"}
                 </Chip>
               }
             >
+              {/* Food Relation Protocol & Low Stock Tags */}
+              <View style={styles.cardHeaderMeta}>
+                <Chip
+                  icon="silverware-fork-knife"
+                  style={styles.foodChip}
+                  textStyle={styles.foodChipText}
+                >
+                  {item.foodRelation === "BEFORE_FOOD"
+                    ? "🥣 Before Food"
+                    : item.foodRelation === "WITH_FOOD"
+                      ? "🥗 With Food"
+                      : "🍽️ After Food"}
+                </Chip>
+
+                {stock <= 2 && (
+                  <Chip
+                    icon="alert-circle"
+                    style={styles.urgentStockChip}
+                    textStyle={styles.urgentStockChipText}
+                  >
+                    {stock <= 0 ? "Empty Strip" : `Only ${stock} Left`}
+                  </Chip>
+                )}
+              </View>
+
+              {/* Overdue Advisory Banner */}
+              {isOverdue && (
+                <View style={styles.overdueNotice}>
+                  <Text variant="bodySmall" style={styles.overdueText}>
+                    ⏰ Scheduled at {item.reminderTime || "08:30"}. Dose is overdue.
+                  </Text>
+                  <Text variant="labelSmall" style={styles.medicalAdvisory}>
+                    💡 Take now if remembered. Never double doses if close to next slot.
+                  </Text>
+                </View>
+              )}
+
+              {/* 1-Tap Restock Strip Section */}
+              {stock <= 2 && (
+                <View style={styles.restockPrompt}>
+                  <Text variant="bodySmall" style={styles.restockNotice}>
+                    {stock <= 0
+                      ? "⚠️ Strip is completely empty!"
+                      : "⚠️ Strip running low. Refill soon."}
+                  </Text>
+                  <AppButton
+                    mode="contained"
+                    icon="package-variant"
+                    compact
+                    onPress={() => handleRestock(item.medicineId || "", item.medicineName || "Tablet")}
+                    style={styles.restockButton}
+                  >
+                    + Restock Strip (+10)
+                  </AppButton>
+                </View>
+              )}
+
+              {/* Action Buttons */}
               <View style={styles.actionRow}>
                 <AppButton
                   mode={isTaken ? "contained" : "outlined"}
-                  icon={isTaken ? "check" : "checkbox-marked-circle-outline"}
+                  icon={
+                    isTaken
+                      ? "check"
+                      : isOverdue
+                        ? "clock-fast"
+                        : "checkbox-marked-circle-outline"
+                  }
                   onPress={() => handleMark(item.medicineId || "", "TAKEN")}
                   style={[
                     styles.takeBtn,
                     isTaken && { backgroundColor: "#059669" },
+                    !isTaken && isOverdue && { borderColor: "#F59E0B" },
                   ]}
                 >
-                  {isTaken ? "Taken" : "Mark as Taken"}
+                  {isTaken
+                    ? "Taken"
+                    : isOverdue
+                      ? "Take Now (Late)"
+                      : "Mark as Taken"}
                 </AppButton>
 
                 {!isTaken && (
@@ -196,7 +321,7 @@ export const PillHomeScreen: React.FC = () => {
                     textColor="#E11D48"
                     onPress={() => handleMark(item.medicineId || "", "MISSED")}
                   >
-                    Missed
+                    {isOverdue ? "Skip Dose" : "Missed"}
                   </AppButton>
                 )}
               </View>
@@ -312,6 +437,97 @@ const styles = StyleSheet.create({
   },
   chipPending: {
     backgroundColor: "#F1F5F9",
+  },
+  chipOverdue: {
+    backgroundColor: "#FEF3C7",
+  },
+  streakBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF7ED",
+    borderWidth: 1,
+    borderColor: "#FFEDD5",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    gap: 12,
+  },
+  streakIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#FFEDD5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  streakTitle: {
+    fontWeight: "800",
+    color: "#C2410C",
+  },
+  streakSub: {
+    color: "#9A3412",
+    fontSize: 12,
+  },
+  cardHeaderMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  foodChip: {
+    height: 26,
+    backgroundColor: "#F1F5F9",
+  },
+  foodChipText: {
+    fontSize: 11,
+    color: "#475569",
+    fontWeight: "600",
+  },
+  urgentStockChip: {
+    height: 26,
+    backgroundColor: "#FEE2E2",
+  },
+  urgentStockChipText: {
+    fontSize: 11,
+    color: "#DC2626",
+    fontWeight: "700",
+  },
+  overdueNotice: {
+    backgroundColor: "#FEF3C7",
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: "#D97706",
+  },
+  overdueText: {
+    color: "#92400E",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  medicalAdvisory: {
+    color: "#B45309",
+    fontSize: 11,
+    marginTop: 2,
+  },
+  restockPrompt: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  restockNotice: {
+    color: "#991B1B",
+    fontWeight: "600",
+    fontSize: 11,
+    flex: 1,
+    marginRight: 6,
+  },
+  restockButton: {
+    backgroundColor: "#DC2626",
   },
   actionRow: {
     flexDirection: "row",

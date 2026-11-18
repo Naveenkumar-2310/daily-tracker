@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Chip, IconButton, HelperText } from 'react-native-paper';
+import { Text, Chip, IconButton, HelperText, SegmentedButtons } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -57,6 +57,7 @@ export const PetrolEntryScreen: React.FC = () => {
       petrolAmount: '',
       fuelPricePerLitre: '102.5',
       odometerKm: '',
+      isFullTank: true,
       notes: '',
     },
   });
@@ -90,6 +91,7 @@ export const PetrolEntryScreen: React.FC = () => {
 
   // React Hook Form submission with useMutation
   const onSubmit = async (formData: FuelLogFormData) => {
+    const isFull = formData.isFullTank !== false;
     showLoader('Calculating mileage & saving log...');
     try {
       const res = await createFuelLogMutation.mutateAsync({
@@ -98,6 +100,7 @@ export const PetrolEntryScreen: React.FC = () => {
         odometerKm: parseFloat(formData.odometerKm),
         petrolAmount: parseFloat(formData.petrolAmount),
         fuelPricePerLitre: parseFloat(formData.fuelPricePerLitre),
+        isFullTank: isFull,
         notes: formData.notes,
       });
 
@@ -105,8 +108,12 @@ export const PetrolEntryScreen: React.FC = () => {
         setLastAnalysis(res.analysis);
       }
 
-      const achieved = res?.analysis?.actualMileage || (selectedVehicle?.expectedMileage ?? 0);
-      showSuccess(`Fuel entry added successfully! Achieved: ${achieved} km/L`);
+      if (isFull) {
+        const achieved = res?.analysis?.actualMileage || (selectedVehicle?.expectedMileage ?? 0);
+        showSuccess(`Fuel entry added successfully! Achieved: ${achieved} km/L ⛽`);
+      } else {
+        showSuccess(`Partial refuel logged (💧). Mileage will update on next full tank.`);
+      }
 
       // Reset form fields while remembering settings (Selected Vehicle & Fuel Price)
       reset({
@@ -115,6 +122,7 @@ export const PetrolEntryScreen: React.FC = () => {
         date: new Date().toISOString().slice(0, 10),
         petrolAmount: '',
         odometerKm: '',
+        isFullTank: true,
         notes: '',
       });
     } catch (e: any) {
@@ -217,6 +225,39 @@ export const PetrolEntryScreen: React.FC = () => {
                   {errors.date.message}
                 </HelperText>
               )}
+            </View>
+          )}
+        />
+
+        {/* Refuel Mode: Full Tank vs Partial Top-up */}
+        <Controller
+          control={control}
+          name="isFullTank"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.refuelModeWrap}>
+              <Text variant="labelSmall" style={styles.refuelModeLabel}>
+                Refuel Mode:
+              </Text>
+              <SegmentedButtons
+                value={value ? 'full' : 'partial'}
+                onValueChange={(val) => onChange(val === 'full')}
+                buttons={[
+                  {
+                    value: 'full',
+                    label: '⛽ Full Tank',
+                  },
+                  {
+                    value: 'partial',
+                    label: '💧 Partial Refuel',
+                  },
+                ]}
+                style={{ marginBottom: 6 }}
+              />
+              <Text variant="bodySmall" style={styles.refuelModeHint}>
+                {value
+                  ? '🎯 Full Tank: Automatically calculates exact km/L mileage.'
+                  : '💧 Partial Top-up (₹100/₹200): Accumulates litres; true mileage computes on next full tank.'}
+              </Text>
             </View>
           )}
         />
@@ -363,7 +404,11 @@ export const PetrolEntryScreen: React.FC = () => {
                   <Chip style={styles.mileageChip} textStyle={styles.mileageChipText}>
                     {log.actualMileage} km/L
                   </Chip>
-                ) : null}
+                ) : (
+                  <Chip style={styles.partialChip} textStyle={styles.partialChipText}>
+                    💧 Partial
+                  </Chip>
+                )}
                 <IconButton
                   icon="trash-can-outline"
                   size={18}
@@ -464,5 +509,32 @@ const styles = StyleSheet.create({
     color: '#059669',
     fontWeight: '700',
     fontSize: 11,
+  },
+  partialChip: {
+    backgroundColor: '#EFF6FF',
+    height: 28,
+  },
+  partialChipText: {
+    color: '#2563EB',
+    fontWeight: '700',
+    fontSize: 11,
+  },
+  refuelModeWrap: {
+    marginVertical: 10,
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  refuelModeLabel: {
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  refuelModeHint: {
+    color: '#64748B',
+    fontSize: 11,
+    lineHeight: 16,
   },
 });

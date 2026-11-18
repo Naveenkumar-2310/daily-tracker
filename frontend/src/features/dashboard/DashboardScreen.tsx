@@ -17,6 +17,7 @@ import { useDoubleBackToExit } from "../../hooks/useDoubleBackToExit";
 import { RootNavigationProp } from "../../navigation/types";
 import {
   useTodayPillsQuery,
+  useStreakStatsQuery,
   useVehiclesQuery,
   useFuelHistoryQuery,
   useFuelAnalyticsQuery,
@@ -41,6 +42,11 @@ export const DashboardScreen: React.FC = () => {
     isLoading: isPillsLoading,
     refetch: refetchPills,
   } = useTodayPillsQuery(todayStr);
+
+  const {
+    data: streakStats,
+    refetch: refetchStreak,
+  } = useStreakStatsQuery();
 
   const {
     data: vehicles = [],
@@ -74,6 +80,7 @@ export const DashboardScreen: React.FC = () => {
     try {
       await Promise.all([
         refetchPills(),
+        refetchStreak(),
         refetchVehicles(),
         refetchFuel(),
         refetchAnalytics(),
@@ -81,7 +88,7 @@ export const DashboardScreen: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
-  }, [refetchPills, refetchVehicles, refetchFuel, refetchAnalytics]);
+  }, [refetchPills, refetchStreak, refetchVehicles, refetchFuel, refetchAnalytics]);
 
   useFocusEffect(
     useCallback(() => {
@@ -120,6 +127,21 @@ export const DashboardScreen: React.FC = () => {
     isAboveTarget = mileageDiff >= 0;
   }
 
+  // Engine Oil Service calculation
+  const currentOdo = latestFuel?.odometerKm || currentVehicle?.initialOdometerKm || 0;
+  const oilInterval = 3000;
+  const oilKmIntoInterval = currentOdo % oilInterval;
+  const oilDueInKm = Math.round(oilInterval - oilKmIntoInterval);
+  const isOilDueSoon = oilDueInKm <= 500;
+
+  // Monthly Fuel Expense Budget
+  const currentMonthStr = todayStr.slice(0, 7);
+  const currentMonthSpent = vehicleFuel
+    .filter((f) => f.date && f.date.startsWith(currentMonthStr))
+    .reduce((acc, curr) => acc + (curr.petrolAmount || 0), 0);
+  const monthlyBudget = 3000;
+  const budgetUsedPct = Math.min(100, Math.round((currentMonthSpent / monthlyBudget) * 100));
+
   const todayFormatted = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
@@ -146,6 +168,24 @@ export const DashboardScreen: React.FC = () => {
             {todayFormatted}
           </Text>
         </View>
+      </View>
+
+      {/* Gamified Adherence Streak Card */}
+      <View style={styles.streakCard}>
+        <View style={styles.streakIconWrap}>
+          <Text style={{ fontSize: 22 }}>🔥</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="titleMedium" style={styles.streakTitle}>
+            {streakStats?.currentStreakDays || 0}-Day Routine Streak!
+          </Text>
+          <Text variant="bodySmall" style={styles.streakSubtitle}>
+            {takenDoses} of {totalDoses} doses taken today • {streakStats?.takenThisMonth || 0} taken this month
+          </Text>
+        </View>
+        <Chip style={styles.streakChip} textStyle={styles.streakChipText}>
+          {adherencePercent}% Today
+        </Chip>
       </View>
 
       {/* Quick Action Matrix */}
@@ -428,6 +468,65 @@ export const DashboardScreen: React.FC = () => {
               </View>
             )}
 
+            {/* Maintenance & Engine Oil Service Reminder */}
+            <View
+              style={[
+                styles.maintenanceBanner,
+                isOilDueSoon
+                  ? styles.maintenanceBannerUrgent
+                  : styles.maintenanceBannerNormal,
+              ]}
+            >
+              <MaterialCommunityIcons
+                name={isOilDueSoon ? "wrench-clock" : "wrench-outline"}
+                size={20}
+                color={isOilDueSoon ? "#DC2626" : "#475569"}
+              />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text
+                  style={[
+                    styles.maintenanceTitle,
+                    isOilDueSoon && { color: "#991B1B" },
+                  ]}
+                >
+                  {isOilDueSoon
+                    ? `⚠️ Engine Oil Service Due in ${oilDueInKm} KM (Urgent)`
+                    : `🔧 Next Engine Oil Service due in ${oilDueInKm} KM`}
+                </Text>
+                <Text style={styles.maintenanceSub}>
+                  Routine cycle every 3,000 km ensures peak engine life & top mileage
+                </Text>
+              </View>
+            </View>
+
+            {/* Monthly Fuel Expense Budget Tracker */}
+            <View style={styles.budgetWrap}>
+              <View style={styles.budgetHeader}>
+                <Text variant="labelMedium" style={styles.budgetLabel}>
+                  Monthly Fuel Budget ({new Date().toLocaleString("en-US", { month: "short" })})
+                </Text>
+                <Text variant="labelMedium" style={styles.budgetValue}>
+                  ₹{currentMonthSpent} / ₹{monthlyBudget} ({budgetUsedPct}%)
+                </Text>
+              </View>
+              <View style={styles.progressBarTrack}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${budgetUsedPct}%`,
+                      backgroundColor:
+                        budgetUsedPct > 90
+                          ? "#EF4444"
+                          : budgetUsedPct > 70
+                            ? "#F59E0B"
+                            : "#10B981",
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
             {/* Action Buttons */}
             <View style={styles.actionRow}>
               <AppButton
@@ -667,5 +766,103 @@ const styles = StyleSheet.create({
   },
   logFuelBtn: {
     backgroundColor: "#D97706",
+  },
+  streakCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF7ED",
+    borderWidth: 1,
+    borderColor: "#FFEDD5",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    gap: 12,
+  },
+  streakIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFEDD5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  streakTitle: {
+    fontWeight: "800",
+    color: "#C2410C",
+    letterSpacing: -0.2,
+  },
+  streakSubtitle: {
+    color: "#9A3412",
+    fontSize: 12,
+    marginTop: 2,
+  },
+  streakChip: {
+    backgroundColor: "#FFEDD5",
+    height: 28,
+  },
+  streakChipText: {
+    color: "#C2410C",
+    fontWeight: "700",
+    fontSize: 11,
+  },
+  maintenanceBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  maintenanceBannerNormal: {
+    backgroundColor: "#F8FAFC",
+    borderColor: "#E2E8F0",
+  },
+  maintenanceBannerUrgent: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECDD3",
+  },
+  maintenanceTitle: {
+    fontWeight: "700",
+    fontSize: 12,
+    color: "#334155",
+  },
+  maintenanceSub: {
+    color: "#64748B",
+    fontSize: 11,
+    marginTop: 2,
+  },
+  budgetWrap: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 12,
+  },
+  budgetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  budgetLabel: {
+    color: "#475569",
+    fontWeight: "600",
+    fontSize: 11,
+  },
+  budgetValue: {
+    color: "#0F172A",
+    fontWeight: "700",
+    fontSize: 11,
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#E2E8F0",
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 3,
   },
 });

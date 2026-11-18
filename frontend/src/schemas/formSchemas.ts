@@ -25,6 +25,7 @@ export const fuelLogSchema = z.object({
       message: 'Odometer must be a valid positive kilometer reading',
     }),
   notes: z.string().optional(),
+  isFullTank: z.boolean().optional(),
 });
 
 export type FuelLogFormData = z.infer<typeof fuelLogSchema>;
@@ -37,6 +38,7 @@ export const medicineSchema = z.object({
   strength: z.string().min(1, 'Dose is required (e.g. 650 mg or 1 Tablet)'),
   scheduleSlot: z.enum(['MORNING', 'AFTERNOON', 'NIGHT', 'CUSTOM']),
   reminderTime: z.string().min(1, 'Reminder time is required (e.g. 14:30)'),
+  foodRelation: z.enum(['BEFORE_FOOD', 'AFTER_FOOD', 'WITH_FOOD']),
   frequency: z.enum(['DAILY', 'ALTERNATE', 'WEEKDAYS', 'WEEKENDS', 'SOS']),
   durationDays: z.string().optional(),
   currentStock: z

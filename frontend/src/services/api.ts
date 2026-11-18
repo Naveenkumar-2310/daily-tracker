@@ -21,9 +21,11 @@ export interface ITodayMedicineStatus {
   strength: string;
   scheduleSlot: string;
   reminderTime: string;
+  foodRelation?: "BEFORE_FOOD" | "AFTER_FOOD" | "WITH_FOOD";
   status: "TAKEN" | "MISSED" | "SKIPPED" | "PENDING";
   takenAt?: string;
   currentStock: number;
+  lowStockAlert?: number;
 }
 
 export interface IVehicleItem {
@@ -47,6 +49,7 @@ export interface IFuelLogItem {
   litresFilled: number;
   distanceCovered?: number;
   actualMileage?: number;
+  isFullTank?: boolean;
   notes?: string;
   createdAt: string;
 }
@@ -129,6 +132,27 @@ export const ApiService = {
       });
     } catch {}
     localMedicines = localMedicines.filter((m) => m.id !== id);
+  },
+
+  async restockMedicine(id: string, amount: number = 10): Promise<IMedicineItem> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/medicines/${id}/restock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch {}
+
+    const index = localMedicines.findIndex((m) => m.id === id);
+    if (index > -1) {
+      localMedicines[index].currentStock = (localMedicines[index].currentStock || 0) + amount;
+      return localMedicines[index];
+    }
+    throw new Error("Medication not found");
   },
 
   // Today Pill Status
@@ -214,6 +238,44 @@ export const ApiService = {
     return calendarMap;
   },
 
+  // Streak Stats
+  async getStreakStats(medicineId?: string): Promise<{
+    currentStreakDays: number;
+    takenThisMonth: number;
+    missedThisMonth: number;
+  }> {
+    try {
+      const url = `${API_BASE_URL}/api/v1/pill-logs/stats${medicineId ? `?medicineId=${medicineId}` : ""}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch {}
+
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const taken = localPillLogs.some((l) => l.date === dateStr && l.status === "TAKEN");
+      if (taken) {
+        streak++;
+      } else if (i === 0) {
+        continue;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      currentStreakDays: streak,
+      takenThisMonth: localPillLogs.filter((l) => l.status === "TAKEN").length,
+      missedThisMonth: localPillLogs.filter((l) => l.status === "MISSED").length,
+    };
+  },
+
   // Vehicles
   async getVehicles(): Promise<IVehicleItem[]> {
     try {
@@ -291,6 +353,7 @@ export const ApiService = {
     petrolAmount: number;
     fuelPricePerLitre?: number;
     litresFilled?: number;
+    isFullTank?: boolean;
     notes?: string;
   }) {
     try {
@@ -316,8 +379,8 @@ export const ApiService = {
     const litres =
       data.litresFilled ||
       (data.fuelPricePerLitre ? data.petrolAmount / data.fuelPricePerLitre : 1);
-    const actualMileage =
-      litres > 0 ? Number((distanceCovered / litres).toFixed(1)) : 55.0;
+    const isFull = data.isFullTank !== false;
+    const actualMileage = isFull && litres > 0 ? Number((distanceCovered / litres).toFixed(1)) : undefined;
 
     const newLog: IFuelLogItem = {
       id: `fuel-${Date.now()}`,
@@ -329,6 +392,7 @@ export const ApiService = {
       litresFilled: litres,
       distanceCovered,
       actualMileage,
+      isFullTank: isFull,
       notes: data.notes,
       createdAt: new Date().toISOString(),
     };
@@ -339,10 +403,12 @@ export const ApiService = {
       data: newLog,
       analysis: {
         distanceCovered,
-        actualMileage,
+        actualMileage: actualMileage || 0,
         expectedMileage: bike?.expectedMileage || 55.0,
-        isAboveTarget: actualMileage >= (bike?.expectedMileage || 55.0),
-        message: `Calculated mileage: ${actualMileage} km/L for ${distanceCovered} km traveled!`,
+        isAboveTarget: (actualMileage || 0) >= (bike?.expectedMileage || 55.0),
+        message: isFull
+          ? `Calculated mileage: ${actualMileage} km/L for ${distanceCovered} km traveled!`
+          : `Partial top-up logged (💧). Added ${litres.toFixed(1)}L. Full tank fill needed for exact mileage.`,
       },
     };
   },
