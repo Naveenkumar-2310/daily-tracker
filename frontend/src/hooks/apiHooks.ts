@@ -125,6 +125,7 @@ export function useMarkPillMutation() {
       queryClient.invalidateQueries({ queryKey: ['todayPills'] });
       queryClient.invalidateQueries({ queryKey: ['pillStats'] });
       queryClient.invalidateQueries({ queryKey: ['calendarMonth'] });
+      queryClient.invalidateQueries({ queryKey: ['medicines'] });
     },
   });
 }
