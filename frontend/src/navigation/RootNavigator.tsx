@@ -3,8 +3,9 @@ import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
-import { Text } from "react-native-paper";
+import { Text, useTheme } from "react-native-paper";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { ExtendedTheme } from "../theme/theme";
 
 import {
   RootStackParamList,
@@ -28,6 +29,7 @@ const MainTabNavigator: React.FC<{
   isDrawerOpen: boolean;
 }> = ({ onOpenDrawer, isDrawerOpen }) => {
   const navigation = useNavigation<RootNavigationProp>();
+  const theme = useTheme<ExtendedTheme>();
 
   return (
     <Tab.Navigator
@@ -77,9 +79,17 @@ const MainTabNavigator: React.FC<{
             />
           );
         },
-        tabBarActiveTintColor: "#4F46E5",
-        tabBarInactiveTintColor: "#64748B",
-        tabBarStyle: isDrawerOpen ? { display: "none" } : styles.bottomBar,
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.subText || "#64748B",
+        tabBarStyle: [
+          styles.bottomBar,
+          {
+            backgroundColor: theme.colors.surface,
+            borderTopColor: theme.colors.cardBorder || theme.colors.outline,
+            borderTopWidth: theme.isHighContrast ? 2 : 1,
+          },
+          isDrawerOpen ? { display: "none" } : undefined,
+        ],
         tabBarLabelStyle: styles.tabLabel,
         tabBarIcon: ({ color, size, focused }) => {
           let iconName = "view-dashboard";

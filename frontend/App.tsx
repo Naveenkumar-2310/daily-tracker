@@ -2,31 +2,69 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  DefaultTheme as NavDefaultTheme,
+  DarkTheme as NavDarkTheme,
+} from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { AppTheme } from './src/theme/theme';
+import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { GlobalUiProvider } from './src/context/GlobalUiContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { queryClient } from './src/api/queryClient';
+
+function MainApp() {
+  const { theme } = useAppTheme();
+
+  const navTheme = theme.isDark
+    ? {
+        ...NavDarkTheme,
+        colors: {
+          ...NavDarkTheme.colors,
+          background: theme.colors.background,
+          card: theme.colors.surface,
+          text: theme.colors.onSurface,
+          border: theme.colors.outline,
+          primary: theme.colors.primary,
+        },
+      }
+    : {
+        ...NavDefaultTheme,
+        colors: {
+          ...NavDefaultTheme.colors,
+          background: theme.colors.background,
+          card: theme.colors.surface,
+          text: theme.colors.onSurface,
+          border: theme.colors.outline,
+          primary: theme.colors.primary,
+        },
+      };
+
+  return (
+    <PaperProvider
+      theme={theme}
+      settings={{
+        icon: (props) => <MaterialCommunityIcons {...props} />,
+      }}
+    >
+      <GlobalUiProvider>
+        <StatusBar style={theme.isDark ? 'light' : 'dark'} />
+        <NavigationContainer theme={navTheme}>
+          <RootNavigator />
+        </NavigationContainer>
+      </GlobalUiProvider>
+    </PaperProvider>
+  );
+}
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <PaperProvider
-          theme={AppTheme}
-          settings={{
-            icon: (props) => <MaterialCommunityIcons {...props} />,
-          }}
-        >
-          <GlobalUiProvider>
-            <StatusBar style="dark" />
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
-          </GlobalUiProvider>
-        </PaperProvider>
+        <ThemeProvider>
+          <MainApp />
+        </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

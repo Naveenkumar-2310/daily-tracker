@@ -35,6 +35,7 @@ export interface IVehicleItem {
   expectedMileage: number;
   fuelTankCapacity?: number;
   initialOdometerKm: number;
+  monthlyBudget?: number;
   isActive: boolean;
 }
 

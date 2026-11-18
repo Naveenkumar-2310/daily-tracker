@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { Drawer, Text, Divider, useTheme } from "react-native-paper";
 import CustomDrawer from "../common/CustomDrawer";
+import { useAppTheme } from "../../context/ThemeContext";
+import { ExtendedTheme } from "../../theme/theme";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("screen");
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
@@ -34,7 +36,8 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   onSelectScreen,
   onClose,
 }) => {
-  const theme = useTheme();
+  const theme = useTheme<ExtendedTheme>();
+  const { themeMode, setThemeMode } = useAppTheme();
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
 
   useEffect(() => {
@@ -80,6 +83,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
             styles.drawerView,
             {
               width: DRAWER_WIDTH,
+              backgroundColor: theme.colors.surface,
               transform: [{ translateX: slideAnim }],
             },
           ]}
@@ -146,6 +150,40 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 style={[
                   styles.item,
                   activeScreen === "directory" && styles.activeItem,
+                ]}
+              />
+            </Drawer.Section>
+
+            {/* Dynamic Theme & Display Mode */}
+            <Drawer.Section title="THEME & DISPLAY" style={styles.section}>
+              <Drawer.Item
+                label="Light Mode"
+                icon="weather-sunny"
+                active={themeMode === "light"}
+                onPress={() => setThemeMode("light")}
+                style={[
+                  styles.item,
+                  themeMode === "light" && styles.activeItem,
+                ]}
+              />
+              <Drawer.Item
+                label="Dark Mode (OLED Midnight)"
+                icon="weather-night"
+                active={themeMode === "dark"}
+                onPress={() => setThemeMode("dark")}
+                style={[
+                  styles.item,
+                  themeMode === "dark" && styles.activeItem,
+                ]}
+              />
+              <Drawer.Item
+                label="High-Contrast Mode (Elderly)"
+                icon="eye-outline"
+                active={themeMode === "high-contrast"}
+                onPress={() => setThemeMode("high-contrast")}
+                style={[
+                  styles.item,
+                  themeMode === "high-contrast" && styles.activeItem,
                 ]}
               />
             </Drawer.Section>

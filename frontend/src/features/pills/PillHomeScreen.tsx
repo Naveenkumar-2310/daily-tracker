@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from "react";
 import { View, StyleSheet, RefreshControl } from "react-native";
-import { Text, Chip } from "react-native-paper";
+import { Text, Chip, useTheme } from "react-native-paper";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { ExtendedTheme } from "../../theme/theme";
 import { AppCard } from "../../components/common/AppCard";
 import { AppButton } from "../../components/common/AppButton";
 import { AppDatePicker } from "../../components/common/AppDatePicker";
@@ -14,6 +15,7 @@ import { extractErrorMessage } from "../../utils/errorUtils";
 
 export const PillHomeScreen: React.FC = () => {
   const navigation = useNavigation<RootNavigationProp>();
+  const theme = useTheme<ExtendedTheme>();
   const { showLoader, hideLoader, showError, showSuccess } = useGlobalUi();
 
   // Enable Double Back to Exit on Home Screen
@@ -101,7 +103,7 @@ export const PillHomeScreen: React.FC = () => {
 
   return (
     <AppKeyboardWrapper
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
@@ -123,15 +125,42 @@ export const PillHomeScreen: React.FC = () => {
       </View>
 
       {/* Adherence Streak Banner */}
-      <View style={styles.streakBanner}>
+      <View
+        style={[
+          styles.streakBanner,
+          theme.isDark && {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.cardBorder,
+          },
+          theme.isHighContrast && {
+            backgroundColor: "#FFFFFF",
+            borderColor: "#000000",
+            borderWidth: 2,
+          },
+        ]}
+      >
         <View style={styles.streakIconWrap}>
           <Text style={{ fontSize: 18 }}>🔥</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text variant="labelLarge" style={styles.streakTitle}>
+          <Text
+            variant="labelLarge"
+            style={[
+              styles.streakTitle,
+              theme.isDark && { color: "#FBBF24" },
+              theme.isHighContrast && { color: "#000000" },
+            ]}
+          >
             {streakStats?.currentStreakDays || 0}-Day Routine Streak!
           </Text>
-          <Text variant="bodySmall" style={styles.streakSub}>
+          <Text
+            variant="bodySmall"
+            style={[
+              styles.streakSub,
+              theme.isDark && { color: "#E2E8F0" },
+              theme.isHighContrast && { color: "#000000" },
+            ]}
+          >
             {streakStats?.takenThisMonth || 0} doses taken on schedule this month
           </Text>
         </View>
@@ -159,7 +188,13 @@ export const PillHomeScreen: React.FC = () => {
         </AppCard>
       )}
 
-      <Text variant="titleMedium" style={styles.sectionHeader}>
+      <Text
+        variant="titleMedium"
+        style={[
+          styles.sectionHeader,
+          { color: theme.colors.onSurface, fontWeight: theme.isHighContrast ? "900" : "800" },
+        ]}
+      >
         {isToday ? "Scheduled Tablets" : "Tablet Routine History"}
       </Text>
 

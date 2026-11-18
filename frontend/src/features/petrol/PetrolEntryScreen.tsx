@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Chip, IconButton, HelperText, SegmentedButtons } from 'react-native-paper';
+import { Text, Chip, IconButton, HelperText, SegmentedButtons, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ExtendedTheme } from '../../theme/theme';
 
 import { AppCard } from '../../components/common/AppCard';
 import { AppTextField } from '../../components/common/AppTextField';
@@ -25,6 +26,7 @@ import { extractErrorMessage } from '../../utils/errorUtils';
 
 export const PetrolEntryScreen: React.FC = () => {
   const navigation = useNavigation<RootNavigationProp>();
+  const theme = useTheme<ExtendedTheme>();
   const { showLoader, hideLoader, showError, showSuccess } = useGlobalUi();
 
   // Selected Vehicle State
@@ -151,7 +153,10 @@ export const PetrolEntryScreen: React.FC = () => {
   }));
 
   return (
-    <AppKeyboardWrapper style={styles.container} contentContainerStyle={styles.content}>
+    <AppKeyboardWrapper
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       {/* Vehicle Selector Card */}
       <AppCard
         title="Vehicle Profile"

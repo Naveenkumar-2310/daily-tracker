@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
-import { Card, Text } from 'react-native-paper';
+import { Card, Text, useTheme } from 'react-native-paper';
+import { ExtendedTheme } from '../../theme/theme';
 
 export interface AppCardProps {
   title?: string;
@@ -19,15 +20,54 @@ export const AppCard: React.FC<AppCardProps> = ({
   children,
   style,
 }) => {
+  const theme = useTheme<ExtendedTheme>();
+
   return (
-    <Card style={[styles.card, style]} elevation={0}>
+    <Card
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.cardBg || theme.colors.surface,
+          borderColor: theme.colors.cardBorder || theme.colors.outline,
+          borderWidth: theme.isHighContrast ? 2 : 1,
+        },
+        style,
+      ]}
+      elevation={theme.isDark ? 0 : 2}
+    >
       {(title || subtitle || rightAction || leftIcon) && (
         <View style={styles.header}>
           <View style={styles.titleRow}>
             {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
             <View style={styles.titleTextWrapper}>
-              {title && <Text variant="titleMedium" style={styles.title}>{title}</Text>}
-              {subtitle && <Text variant="bodySmall" style={styles.subtitle}>{subtitle}</Text>}
+              {title && (
+                <Text
+                  variant="titleMedium"
+                  style={[
+                    styles.title,
+                    {
+                      color: theme.colors.onSurface,
+                      fontWeight: theme.isHighContrast ? '900' : '700',
+                    },
+                  ]}
+                >
+                  {title}
+                </Text>
+              )}
+              {subtitle && (
+                <Text
+                  variant="bodySmall"
+                  style={[
+                    styles.subtitle,
+                    {
+                      color: theme.colors.subText || theme.colors.onSurfaceVariant,
+                      fontWeight: theme.isHighContrast ? '600' : '400',
+                    },
+                  ]}
+                >
+                  {subtitle}
+                </Text>
+              )}
             </View>
           </View>
           {rightAction && <View style={styles.actionWrapper}>{rightAction}</View>}
@@ -42,14 +82,10 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     marginVertical: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 12,
-    elevation: 2,
   },
   header: {
     flexDirection: 'row',
@@ -71,12 +107,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontWeight: '700',
-    color: '#0F172A',
     letterSpacing: -0.2,
   },
   subtitle: {
-    color: '#64748B',
     marginTop: 2,
     fontSize: 12,
   },

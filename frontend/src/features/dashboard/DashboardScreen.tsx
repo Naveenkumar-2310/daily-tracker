@@ -9,6 +9,7 @@ import {
 import { Text, Chip, useTheme } from "react-native-paper";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { ExtendedTheme } from "../../theme/theme";
 import { AppCard } from "../../components/common/AppCard";
 import { AppButton } from "../../components/common/AppButton";
 import { AppKeyboardWrapper } from "../../components/common/AppKeyboardWrapper";
@@ -27,7 +28,7 @@ import { extractErrorMessage } from "../../utils/errorUtils";
 
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<RootNavigationProp>();
-  const theme = useTheme();
+  const theme = useTheme<ExtendedTheme>();
   const { showLoader, hideLoader, showError, showSuccess } = useGlobalUi();
 
   // Android Double Back to Exit from Dashboard
@@ -134,12 +135,12 @@ export const DashboardScreen: React.FC = () => {
   const oilDueInKm = Math.round(oilInterval - oilKmIntoInterval);
   const isOilDueSoon = oilDueInKm <= 500;
 
-  // Monthly Fuel Expense Budget
+  // Monthly Fuel Expense Budget Master
   const currentMonthStr = todayStr.slice(0, 7);
   const currentMonthSpent = vehicleFuel
     .filter((f) => f.date && f.date.startsWith(currentMonthStr))
     .reduce((acc, curr) => acc + (curr.petrolAmount || 0), 0);
-  const monthlyBudget = 3000;
+  const monthlyBudget = currentVehicle?.monthlyBudget || 3000;
   const budgetUsedPct = Math.min(100, Math.round((currentMonthSpent / monthlyBudget) * 100));
 
   const todayFormatted = new Date().toLocaleDateString("en-US", {
@@ -151,7 +152,7 @@ export const DashboardScreen: React.FC = () => {
 
   return (
     <AppKeyboardWrapper
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
@@ -164,22 +165,58 @@ export const DashboardScreen: React.FC = () => {
       {/* Executive Welcome Banner */}
       <View style={styles.welcomeBanner}>
         <View>
-          <Text variant="headlineSmall" style={styles.welcomeTitle}>
+          <Text
+            variant="headlineSmall"
+            style={[
+              styles.welcomeTitle,
+              {
+                color: theme.colors.onSurface,
+                fontWeight: theme.isHighContrast ? "900" : "800",
+              },
+            ]}
+          >
             {todayFormatted}
           </Text>
         </View>
       </View>
 
       {/* Gamified Adherence Streak Card */}
-      <View style={styles.streakCard}>
+      <View
+        style={[
+          styles.streakCard,
+          theme.isDark && {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.cardBorder,
+          },
+          theme.isHighContrast && {
+            backgroundColor: "#FFFFFF",
+            borderColor: "#000000",
+            borderWidth: 2,
+          },
+        ]}
+      >
         <View style={styles.streakIconWrap}>
           <Text style={{ fontSize: 22 }}>🔥</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text variant="titleMedium" style={styles.streakTitle}>
+          <Text
+            variant="titleMedium"
+            style={[
+              styles.streakTitle,
+              theme.isDark && { color: "#FBBF24" },
+              theme.isHighContrast && { color: "#000000" },
+            ]}
+          >
             {streakStats?.currentStreakDays || 0}-Day Routine Streak!
           </Text>
-          <Text variant="bodySmall" style={styles.streakSubtitle}>
+          <Text
+            variant="bodySmall"
+            style={[
+              styles.streakSubtitle,
+              theme.isDark && { color: "#E2E8F0" },
+              theme.isHighContrast && { color: "#000000" },
+            ]}
+          >
             {takenDoses} of {totalDoses} doses taken today • {streakStats?.takenThisMonth || 0} taken this month
           </Text>
         </View>
@@ -398,57 +435,102 @@ export const DashboardScreen: React.FC = () => {
             )}
 
             {/* 4-Metric Grid */}
-            <View style={styles.metricsGrid}>
+            <View
+              style={[
+                styles.metricsGrid,
+                {
+                  backgroundColor: theme.colors.metricBoxBg,
+                  borderColor: theme.colors.cardBorder || theme.colors.outline,
+                  borderWidth: theme.isHighContrast ? 2 : 1,
+                },
+              ]}
+            >
               <View style={styles.metricGridItem}>
-                <Text variant="headlineSmall" style={styles.metricVal}>
+                <Text
+                  variant="headlineSmall"
+                  style={[styles.metricVal, { color: theme.colors.onSurface }]}
+                >
                   {latestFuel?.actualMileage != null
                     ? `${latestFuel.actualMileage}`
                     : "-"}
                 </Text>
-                <Text variant="labelSmall" style={styles.metricLabel}>
+                <Text
+                  variant="labelSmall"
+                  style={[styles.metricLabel, { color: theme.colors.onSurface }]}
+                >
                   Last km/L
                 </Text>
-                <Text variant="labelSmall" style={styles.metricSub}>
+                <Text
+                  variant="labelSmall"
+                  style={[styles.metricSub, { color: theme.colors.subText }]}
+                >
                   Latest Fill
                 </Text>
               </View>
 
               <View style={styles.metricGridItem}>
-                <Text variant="headlineSmall" style={styles.metricVal}>
+                <Text
+                  variant="headlineSmall"
+                  style={[styles.metricVal, { color: theme.colors.onSurface }]}
+                >
                   {analytics?.averageMileage != null && analytics.averageMileage > 0
                     ? `${analytics.averageMileage}`
                     : "-"}
                 </Text>
-                <Text variant="labelSmall" style={styles.metricLabel}>
+                <Text
+                  variant="labelSmall"
+                  style={[styles.metricLabel, { color: theme.colors.onSurface }]}
+                >
                   Avg km/L
                 </Text>
-                <Text variant="labelSmall" style={styles.metricSub}>
+                <Text
+                  variant="labelSmall"
+                  style={[styles.metricSub, { color: theme.colors.subText }]}
+                >
                   Lifetime
                 </Text>
               </View>
 
               <View style={styles.metricGridItem}>
-                <Text variant="headlineSmall" style={styles.metricVal}>
+                <Text
+                  variant="headlineSmall"
+                  style={[styles.metricVal, { color: theme.colors.onSurface }]}
+                >
                   {latestFuel?.odometerKm || currentVehicle.initialOdometerKm}
                 </Text>
-                <Text variant="labelSmall" style={styles.metricLabel}>
+                <Text
+                  variant="labelSmall"
+                  style={[styles.metricLabel, { color: theme.colors.onSurface }]}
+                >
                   Odometer KM
                 </Text>
-                <Text variant="labelSmall" style={styles.metricSub}>
+                <Text
+                  variant="labelSmall"
+                  style={[styles.metricSub, { color: theme.colors.subText }]}
+                >
                   Current
                 </Text>
               </View>
 
               <View style={styles.metricGridItem}>
-                <Text variant="headlineSmall" style={styles.metricVal}>
+                <Text
+                  variant="headlineSmall"
+                  style={[styles.metricVal, { color: theme.colors.onSurface }]}
+                >
                   {analytics?.averageCostPerKm != null && analytics.averageCostPerKm > 0
                     ? `₹${analytics.averageCostPerKm}`
                     : "-"}
                 </Text>
-                <Text variant="labelSmall" style={styles.metricLabel}>
+                <Text
+                  variant="labelSmall"
+                  style={[styles.metricLabel, { color: theme.colors.onSurface }]}
+                >
                   Cost / km
                 </Text>
-                <Text variant="labelSmall" style={styles.metricSub}>
+                <Text
+                  variant="labelSmall"
+                  style={[styles.metricSub, { color: theme.colors.subText }]}
+                >
                   Running Cost
                 </Text>
               </View>
@@ -456,13 +538,26 @@ export const DashboardScreen: React.FC = () => {
 
             {/* Quick Analytics Summary Strip */}
             {vehicleFuel.length > 0 && (
-              <View style={styles.summaryStrip}>
+              <View
+                style={[
+                  styles.summaryStrip,
+                  {
+                    backgroundColor: theme.colors.surfaceVariant,
+                    borderColor: theme.colors.outline,
+                  },
+                ]}
+              >
                 <MaterialCommunityIcons
                   name="chart-timeline-variant"
                   size={15}
-                  color="#475569"
+                  color={theme.colors.subText || "#475569"}
                 />
-                <Text style={styles.summaryStripText}>
+                <Text
+                  style={[
+                    styles.summaryStripText,
+                    { color: theme.colors.subText || "#475569" },
+                  ]}
+                >
                   {vehicleFuel.length} refuels logged • {analytics?.totalDistanceKm || 0} km tracked • ₹{analytics?.totalSpent || 0} spent
                 </Text>
               </View>
@@ -474,42 +569,74 @@ export const DashboardScreen: React.FC = () => {
                 styles.maintenanceBanner,
                 isOilDueSoon
                   ? styles.maintenanceBannerUrgent
-                  : styles.maintenanceBannerNormal,
+                  : [
+                      styles.maintenanceBannerNormal,
+                      {
+                        backgroundColor: theme.colors.metricBoxBg,
+                        borderColor: theme.colors.cardBorder || theme.colors.outline,
+                        borderWidth: theme.isHighContrast ? 2 : 1,
+                      },
+                    ],
               ]}
             >
               <MaterialCommunityIcons
                 name={isOilDueSoon ? "wrench-clock" : "wrench-outline"}
                 size={20}
-                color={isOilDueSoon ? "#DC2626" : "#475569"}
+                color={isOilDueSoon ? "#DC2626" : theme.colors.subText}
               />
               <View style={{ flex: 1, marginLeft: 10 }}>
                 <Text
                   style={[
                     styles.maintenanceTitle,
-                    isOilDueSoon && { color: "#991B1B" },
+                    isOilDueSoon ? { color: "#991B1B" } : { color: theme.colors.onSurface },
                   ]}
                 >
                   {isOilDueSoon
                     ? `⚠️ Engine Oil Service Due in ${oilDueInKm} KM (Urgent)`
                     : `🔧 Next Engine Oil Service due in ${oilDueInKm} KM`}
                 </Text>
-                <Text style={styles.maintenanceSub}>
+                <Text
+                  style={[
+                    styles.maintenanceSub,
+                    { color: theme.colors.subText },
+                  ]}
+                >
                   Routine cycle every 3,000 km ensures peak engine life & top mileage
                 </Text>
               </View>
             </View>
 
             {/* Monthly Fuel Expense Budget Tracker */}
-            <View style={styles.budgetWrap}>
+            <View
+              style={[
+                styles.budgetWrap,
+                {
+                  backgroundColor: theme.colors.metricBoxBg,
+                  borderColor: theme.colors.cardBorder || theme.colors.outline,
+                  borderWidth: theme.isHighContrast ? 2 : 1,
+                },
+              ]}
+            >
               <View style={styles.budgetHeader}>
-                <Text variant="labelMedium" style={styles.budgetLabel}>
+                <Text
+                  variant="labelMedium"
+                  style={[styles.budgetLabel, { color: theme.colors.subText }]}
+                >
                   Monthly Fuel Budget ({new Date().toLocaleString("en-US", { month: "short" })})
                 </Text>
-                <Text variant="labelMedium" style={styles.budgetValue}>
+                <Text
+                  variant="labelMedium"
+                  style={[styles.budgetValue, { color: theme.colors.onSurface }]}
+                >
                   ₹{currentMonthSpent} / ₹{monthlyBudget} ({budgetUsedPct}%)
                 </Text>
               </View>
-              <View style={styles.progressBarTrack}>
+              <View
+                style={[
+                  styles.progressBarTrack,
+                  { backgroundColor: theme.colors.surfaceVariant },
+                ]}
+              >
                 <View
                   style={[
                     styles.progressBarFill,

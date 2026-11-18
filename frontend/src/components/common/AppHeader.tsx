@@ -1,6 +1,8 @@
 import React from 'react';
-import { Appbar } from 'react-native-paper';
-import { StyleSheet } from 'react-native';
+import { Appbar, useTheme } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { ExtendedTheme } from '../../theme/theme';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export interface AppHeaderProps {
   title: string;
@@ -20,43 +22,83 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onMenu,
   actions = [],
 }) => {
+  const theme = useTheme<ExtendedTheme>();
+  const { themeMode, cycleTheme } = useAppTheme();
+
+  const themeIcon =
+    themeMode === 'dark'
+      ? 'weather-night'
+      : themeMode === 'high-contrast'
+        ? 'eye-outline'
+        : 'weather-sunny';
+
   return (
-    <Appbar.Header style={styles.header}>
+    <Appbar.Header
+      style={[
+        styles.header,
+        {
+          backgroundColor: theme.colors.surface,
+          borderBottomColor: theme.colors.cardBorder || theme.colors.outline,
+          borderBottomWidth: theme.isHighContrast ? 2 : 1,
+        },
+      ]}
+    >
       {onBack ? (
-        <Appbar.BackAction onPress={onBack} color="#0F172A" />
+        <Appbar.BackAction onPress={onBack} color={theme.colors.onSurface} />
       ) : onMenu ? (
-        <Appbar.Action icon="menu" onPress={onMenu} color="#0F172A" />
+        <Appbar.Action icon="menu" onPress={onMenu} color={theme.colors.onSurface} />
       ) : null}
+
       <Appbar.Content
         title={title}
         subtitle={subtitle}
-        titleStyle={styles.title}
-        subtitleStyle={styles.subtitle}
+        titleStyle={[
+          styles.title,
+          {
+            color: theme.colors.onSurface,
+            fontWeight: theme.isHighContrast ? '900' : '800',
+          },
+        ]}
+        subtitleStyle={[
+          styles.subtitle,
+          {
+            color: theme.colors.subText || theme.colors.onSurfaceVariant,
+            fontWeight: theme.isHighContrast ? '600' : '400',
+          },
+        ]}
       />
+
+      {/* Screen-specific Action Buttons */}
       {actions.map((act, index) => (
-        <Appbar.Action key={index} icon={act.icon} onPress={act.onPress} color="#0F172A" />
+        <Appbar.Action
+          key={index}
+          icon={act.icon}
+          onPress={act.onPress}
+          color={theme.colors.onSurface}
+        />
       ))}
+
+      {/* 1-Tap Theme Cycle Button (Light -> Dark -> High-Contrast) */}
+      <Appbar.Action
+        icon={themeIcon}
+        onPress={cycleTheme}
+        color={themeMode === 'dark' ? '#818CF8' : themeMode === 'high-contrast' ? '#000000' : '#D97706'}
+      />
     </Appbar.Header>
   );
 };
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
     elevation: 0,
     height: 60,
   },
   title: {
-    fontWeight: '800',
     fontSize: 18,
-    color: '#0F172A',
     letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 12,
-    color: '#64748B',
     marginTop: -2,
   },
 });

@@ -71,6 +71,12 @@ export const vehicleSchema = z.object({
     .refine((val) => !val || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0), {
       message: 'Initial odometer must be a valid number',
     }),
+  monthlyBudget: z
+    .string()
+    .optional()
+    .refine((val) => !val || (!isNaN(parseFloat(val)) && parseFloat(val) > 0), {
+      message: 'Monthly budget must be a positive amount in ₹',
+    }),
 });
 
 export type VehicleFormData = z.infer<typeof vehicleSchema>;

@@ -91,6 +91,7 @@ export interface CreateVehicleDto {
     'expectedMileage': number;
     'fuelTankCapacity'?: number;
     'initialOdometerKm'?: number;
+    'monthlyBudget'?: number;
 }
 export interface DeleteMedicine200Response {
     'success'?: boolean;
@@ -273,6 +274,7 @@ export interface UpdateVehicleDto {
     'expectedMileage'?: number;
     'fuelTankCapacity'?: number;
     'initialOdometerKm'?: number;
+    'monthlyBudget'?: number;
     'isActive'?: boolean;
 }
 export interface Vehicle {
@@ -282,6 +284,7 @@ export interface Vehicle {
     'expectedMileage': number;
     'fuelTankCapacity'?: number;
     'initialOdometerKm': number;
+    'monthlyBudget'?: number;
     'isActive'?: boolean;
 }
 

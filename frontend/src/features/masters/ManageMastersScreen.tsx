@@ -11,10 +11,12 @@ import {
   HelperText,
   Switch,
   Chip,
+  useTheme,
 } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ExtendedTheme } from "../../theme/theme";
 
 import { AppCard } from "../../components/common/AppCard";
 import { AppTextField } from "../../components/common/AppTextField";
@@ -46,6 +48,7 @@ import { extractErrorMessage } from "../../utils/errorUtils";
 export const ManageMastersScreen: React.FC = () => {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<any>();
+  const theme = useTheme<ExtendedTheme>();
   const { showLoader, hideLoader, showError, showSuccess } = useGlobalUi();
 
   const [tab, setTab] = useState<"medicines" | "vehicles">(
@@ -114,6 +117,7 @@ export const ManageMastersScreen: React.FC = () => {
       registrationNumber: "",
       expectedMileage: "",
       initialOdometerKm: "",
+      monthlyBudget: "3000",
     },
   });
 
@@ -135,6 +139,7 @@ export const ManageMastersScreen: React.FC = () => {
   const [editVehiclePlate, setEditVehiclePlate] = useState("");
   const [editVehicleMileage, setEditVehicleMileage] = useState("");
   const [editVehicleInitialKm, setEditVehicleInitialKm] = useState("");
+  const [editVehicleBudget, setEditVehicleBudget] = useState("3000");
 
   // Vehicle Delete State
   const [deletingVehicle, setDeletingVehicle] = useState<any | null>(null);
@@ -250,6 +255,7 @@ export const ManageMastersScreen: React.FC = () => {
         registrationNumber: data.registrationNumber?.trim() || undefined,
         expectedMileage: parseFloat(data.expectedMileage) || 55.0,
         initialOdometerKm: parseFloat(data.initialOdometerKm || "0") || 0,
+        monthlyBudget: parseFloat(data.monthlyBudget || "3000") || 3000,
       });
 
       // Reset form fields while remembering tab setting
@@ -258,6 +264,7 @@ export const ManageMastersScreen: React.FC = () => {
         registrationNumber: "",
         expectedMileage: "",
         initialOdometerKm: "",
+        monthlyBudget: "3000",
       });
       showSuccess(`Vehicle "${data.name.trim()}" registered successfully!`);
     } catch (e: any) {
@@ -273,6 +280,7 @@ export const ManageMastersScreen: React.FC = () => {
     setEditVehiclePlate(item.registrationNumber || "");
     setEditVehicleMileage(String(item.expectedMileage));
     setEditVehicleInitialKm(String(item.initialOdometerKm));
+    setEditVehicleBudget(String(item.monthlyBudget || 3000));
   };
 
   const handleSaveEditVehicle = async () => {
@@ -291,6 +299,7 @@ export const ManageMastersScreen: React.FC = () => {
           registrationNumber: editVehiclePlate.trim() || undefined,
           expectedMileage: parseFloat(editVehicleMileage) || 55.0,
           initialOdometerKm: parseFloat(editVehicleInitialKm) || 0,
+          monthlyBudget: parseFloat(editVehicleBudget || "3000") || 3000,
         },
       });
       setEditingVehicle(null);
@@ -318,7 +327,10 @@ export const ManageMastersScreen: React.FC = () => {
   };
 
   return (
-    <AppKeyboardWrapper style={styles.container} contentContainerStyle={styles.content}>
+    <AppKeyboardWrapper
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <SegmentedButtons
         value={tab}
         onValueChange={(v) => setTab(v as any)}
@@ -752,6 +764,29 @@ export const ManageMastersScreen: React.FC = () => {
               )}
             />
 
+            {/* Monthly Fuel Expense Budget Master */}
+            <Controller
+              control={vehicleControl}
+              name="monthlyBudget"
+              render={({ field: { onChange, value } }) => (
+                <View>
+                  <AppTextField
+                    label="Monthly Fuel Budget (₹)"
+                    placeholder="e.g. 3000"
+                    value={value || ""}
+                    onChangeText={onChange}
+                    keyboardType="numeric"
+                    error={!!vehicleErrors.monthlyBudget}
+                    helperText={
+                      vehicleErrors.monthlyBudget?.message ||
+                      "Allocated monthly spending limit (e.g. ₹2,500 bike / ₹6,000 car)"
+                    }
+                    left={<AppTextField.Affix text="₹ " />}
+                  />
+                </View>
+              )}
+            />
+
             <AppButton
               mode="contained"
               icon="plus"
@@ -797,7 +832,7 @@ export const ManageMastersScreen: React.FC = () => {
                 }
               >
                 <Text variant="bodySmall" style={{ color: "#64748B" }}>
-                  Reg: {v.registrationNumber || "Not specified"} • Fuel: Petrol
+                  Reg: {v.registrationNumber || "Not specified"} • Budget: ₹{v.monthlyBudget || 3000}/mo • Fuel: Petrol
                 </Text>
               </AppCard>
             ))
@@ -986,6 +1021,14 @@ export const ManageMastersScreen: React.FC = () => {
               value={editVehicleInitialKm}
               onChangeText={setEditVehicleInitialKm}
               keyboardType="numeric"
+            />
+
+            <AppTextField
+              label="Monthly Fuel Budget (₹)"
+              value={editVehicleBudget}
+              onChangeText={setEditVehicleBudget}
+              keyboardType="numeric"
+              left={<AppTextField.Affix text="₹ " />}
             />
 
             <View style={styles.modalBtnRow}>
