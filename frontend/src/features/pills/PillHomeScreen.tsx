@@ -74,6 +74,22 @@ export const PillHomeScreen: React.FC = () => {
     }
   };
 
+  const handleTestAlarm = async () => {
+    showLoader("Queueing test alarm in 2s...");
+    try {
+      const success = await NotificationService.triggerTestAlarmNow();
+      if (success) {
+        showSuccess("🔔 Test chime queued! Rings in 2 seconds. Check speaker & vibration.");
+      } else {
+        showError("Please enable notification permissions in your phone settings.");
+      }
+    } catch (err: any) {
+      showError(extractErrorMessage(err, "Failed to trigger alarm"));
+    } finally {
+      hideLoader();
+    }
+  };
+
   const handleRestock = async (medId: string, medName: string) => {
     showLoader(`Restocking ${medName}...`);
     try {
@@ -117,7 +133,7 @@ export const PillHomeScreen: React.FC = () => {
         />
       }
     >
-      {/* Date Header Controller */}
+      {/* Date Header Controller & Instant Alarm Test */}
       <View style={styles.dateRow}>
         <View style={{ flex: 1 }}>
           <AppDatePicker
@@ -126,6 +142,14 @@ export const PillHomeScreen: React.FC = () => {
             onChange={(d) => setSelectedDate(d)}
           />
         </View>
+        <AppButton
+          mode="outlined"
+          icon="bell-ring-outline"
+          onPress={handleTestAlarm}
+          style={styles.testAlarmBtn}
+        >
+          Test Alarm
+        </AppButton>
       </View>
 
       {/* Adherence Streak Banner - Clickable to Calendar */}
@@ -294,7 +318,7 @@ export const PillHomeScreen: React.FC = () => {
                 </Chip>
               }
             >
-              {/* Food Protocol & Low Stock Badges (Clean Responsive Badges) */}
+              {/* Food Protocol, Alarm Active & Low Stock Badges (Clean Responsive Badges) */}
               <View style={styles.tagBadgeRow}>
                 <View
                   style={[
@@ -316,6 +340,29 @@ export const PillHomeScreen: React.FC = () => {
                       : item.foodRelation === "WITH_FOOD"
                         ? "🥗 With Food"
                         : "🍽️ After Food"}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.tagBadge,
+                    {
+                      backgroundColor: theme.isDark
+                        ? "rgba(79, 70, 229, 0.15)"
+                        : "#EEF2FF",
+                      borderColor: theme.isDark
+                        ? "rgba(99, 102, 241, 0.35)"
+                        : "#C7D2FE",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tagBadgeText,
+                      { color: theme.isDark ? "#A5B4FC" : "#4F46E5" },
+                    ]}
+                  >
+                    🔔 {item.reminderTime || "08:30"} Alarm Active
                   </Text>
                 </View>
 
@@ -360,32 +407,42 @@ export const PillHomeScreen: React.FC = () => {
                 </View>
               )}
 
-              {/* Action Buttons */}
-              <View style={styles.actionRow}>
-                <AppButton
-                  mode={isTaken ? "contained" : "outlined"}
-                  icon={
-                    isTaken
-                      ? "check"
-                      : isOverdue
-                        ? "clock-fast"
-                        : "checkbox-marked-circle-outline"
-                  }
-                  onPress={() => handleMark(item.medicineId || "", "TAKEN")}
-                  style={[
-                    styles.takeBtn,
-                    isTaken && { backgroundColor: "#059669" },
-                    !isTaken && isOverdue && { borderColor: "#F59E0B" },
-                  ]}
-                >
-                  {isTaken
-                    ? "Taken"
-                    : isOverdue
-                      ? "Take Now (Late)"
-                      : "Mark as Taken"}
-                </AppButton>
+              {/* Action Buttons - Only shown when dose is NOT yet taken */}
+              {isTaken ? (
+                <View style={styles.takenNoticeRow}>
+                  <Text
+                    style={[
+                      styles.takenNoticeText,
+                      { color: theme.colors.subText || "#64748B" },
+                    ]}
+                  >
+                    ✓ Dose marked as taken for today
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleMark(item.medicineId || "", "MISSED")}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={[styles.undoText, { color: theme.colors.primary }]}>
+                      Undo
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.actionRow}>
+                  <AppButton
+                    mode="contained"
+                    icon={isOverdue ? "clock-fast" : "check"}
+                    onPress={() => handleMark(item.medicineId || "", "TAKEN")}
+                    style={[
+                      styles.takeBtn,
+                      isOverdue
+                        ? { backgroundColor: "#D97706" }
+                        : { backgroundColor: "#4F46E5" },
+                    ]}
+                  >
+                    {isOverdue ? "Take Now (Late)" : "Mark as Taken"}
+                  </AppButton>
 
-                {!isTaken && (
                   <AppButton
                     mode="text"
                     textColor="#E11D48"
@@ -393,8 +450,8 @@ export const PillHomeScreen: React.FC = () => {
                   >
                     {isOverdue ? "Skip Dose" : "Missed"}
                   </AppButton>
-                )}
-              </View>
+                </View>
+              )}
             </AppCard>
           );
         })
@@ -608,5 +665,31 @@ const styles = StyleSheet.create({
   },
   takeBtn: {
     flex: 1,
+  },
+  testAlarmBtn: {
+    marginBottom: 6,
+    height: 48,
+    justifyContent: "center",
+    borderColor: "#C7D2FE",
+  },
+  takenNoticeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 8,
+    paddingBottom: 2,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(148, 163, 184, 0.15)",
+  },
+  takenNoticeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#059669",
+  },
+  undoText: {
+    fontSize: 12,
+    fontWeight: "700",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
 });
