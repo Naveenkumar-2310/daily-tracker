@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { AppCard } from '../../components/common/AppCard';
 import { AppButton } from '../../components/common/AppButton';
 import { ApiService } from '../../services/api';
@@ -13,9 +14,16 @@ export const PillCalendarScreen: React.FC = () => {
   const theme = useTheme();
   const { showLoader, hideLoader, showError, showSuccess } = useGlobalUi();
 
-  const [currentMonth, setCurrentMonth] = useState('2026-11');
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const yesterdayDate = new Date(now);
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayStr = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
+
+  const currentMonthStr = todayStr.slice(0, 7);
+  const [currentMonth, setCurrentMonth] = useState(currentMonthStr);
   const [calendarData, setCalendarData] = useState<Record<string, any>>({});
-  const [selectedDay, setSelectedDay] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedDay, setSelectedDay] = useState(todayStr);
 
   const loadMonthData = async (month: string, silent = false) => {
     if (!silent) showLoader('Loading calendar matrix...');
@@ -33,7 +41,8 @@ export const PillCalendarScreen: React.FC = () => {
     loadMonthData(currentMonth);
   }, [currentMonth]);
 
-  const daysInMonth = 30; // November
+  const [yearNum, monthNum] = currentMonth.split('-').map(Number);
+  const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => {
     const dayNum = String(i + 1).padStart(2, '0');
     return `${currentMonth}-${dayNum}`;
@@ -42,7 +51,20 @@ export const PillCalendarScreen: React.FC = () => {
   const selectedDayInfo = calendarData[selectedDay];
   const isTaken = selectedDayInfo?.allTaken;
 
+  const isFuture = selectedDay > todayStr;
+  const isPastLocked = selectedDay < yesterdayStr;
+  const isEditable = !isFuture && !isPastLocked;
+
   const handleToggleDay = async () => {
+    if (isFuture) {
+      showError('Medical Precaution: Cannot record medication intake for future dates.');
+      return;
+    }
+    if (isPastLocked) {
+      showError('Clinical Precaution: Intake records older than yesterday are locked for safety.');
+      return;
+    }
+
     const meds = await ApiService.getMedicines();
     if (meds.length === 0) {
       showError('Please configure at least one prescription in the Directory first.');
@@ -62,19 +84,28 @@ export const PillCalendarScreen: React.FC = () => {
     }
   };
 
+  // Month title format: e.g. "November 2026"
+  const monthTitle = new Date(yearNum, monthNum - 1, 1).toLocaleString('default', {
+    month: 'long',
+    year: 'numeric',
+  });
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Clean Month Header without duplicate inside back button */}
+      {/* Month Header */}
       <View style={styles.topBar}>
         <Text variant="headlineSmall" style={styles.monthTitle}>
-          November 2026
+          {monthTitle}
         </Text>
         <Text variant="bodySmall" style={styles.monthSubtitle}>
-          Tap any date below to inspect or record doses
+          Medical Intake Matrix (Only Today and Yesterday are editable)
         </Text>
       </View>
 
-      <AppCard title="Monthly Adherence Grid" subtitle="🟢 Taken  •  🔴 Missed  •  ⚪ Scheduled">
+      <AppCard
+        title="Monthly Adherence Grid"
+        subtitle="🟢 Taken  •  🔴 Missed  •  ⚪ Editable  •  🔒 Locked"
+      >
         {/* Calendar Grid */}
         <View style={styles.grid}>
           {daysArray.map((dateStr) => {
@@ -83,15 +114,22 @@ export const PillCalendarScreen: React.FC = () => {
             const taken = dayRecord?.allTaken;
             const hasLog = Boolean(dayRecord && dayRecord.logs?.length > 0);
             const isSelected = selectedDay === dateStr;
+            const cellIsToday = dateStr === todayStr;
+            const cellIsYesterday = dateStr === yesterdayStr;
+            const cellIsFuture = dateStr > todayStr;
+            const cellIsPastLocked = dateStr < yesterdayStr;
 
             return (
               <TouchableOpacity
                 key={dateStr}
                 style={[
                   styles.dayCell,
+                  cellIsToday && styles.todayCell,
                   isSelected && styles.selectedCell,
                   taken && styles.takenCell,
                   hasLog && !taken && styles.missedCell,
+                  cellIsFuture && styles.futureCell,
+                  cellIsPastLocked && !hasLog && styles.pastLockedCell,
                 ]}
                 onPress={() => setSelectedDay(dateStr)}
                 activeOpacity={0.7}
@@ -99,13 +137,26 @@ export const PillCalendarScreen: React.FC = () => {
                 <Text
                   style={[
                     styles.dayText,
+                    cellIsToday && styles.todayDayText,
                     taken && styles.takenDayText,
                     hasLog && !taken && styles.missedDayText,
                     isSelected && styles.selectedDayText,
+                    cellIsFuture && styles.futureDayText,
+                    cellIsPastLocked && !hasLog && styles.pastLockedDayText,
                   ]}
                 >
                   {dayNum}
                 </Text>
+                {cellIsFuture && (
+                  <View style={styles.cellLockBadge}>
+                    <MaterialCommunityIcons name="lock" size={9} color="#94A3B8" />
+                  </View>
+                )}
+                {cellIsPastLocked && !hasLog && (
+                  <View style={styles.cellLockBadge}>
+                    <MaterialCommunityIcons name="lock-outline" size={9} color="#CBD5E1" />
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -115,22 +166,62 @@ export const PillCalendarScreen: React.FC = () => {
       {/* Selected Day Status Card */}
       <AppCard
         title={`Log for ${selectedDay}`}
-        subtitle={isTaken ? '✓ Doses completed on this day' : 'Pending or skipped'}
+        subtitle={
+          isFuture
+            ? '🔒 Future Date (Locked)'
+            : isPastLocked
+            ? (isTaken ? '✓ Taken (Archived Record)' : '🔒 Past Date (Locked)')
+            : selectedDay === todayStr
+            ? '⚡ Today (Active Intake Window)'
+            : '🕒 Yesterday (Grace Period Window)'
+        }
         style={{ marginTop: 14 }}
       >
-        <Text style={styles.infoText}>
-          {isTaken
-            ? 'Adherence verified. You fulfilled your scheduled medication intake.'
-            : 'Did you take your tablets on this date? Tap below to record retroactively.'}
-        </Text>
-        <AppButton
-          mode={isTaken ? 'outlined' : 'contained'}
-          icon={isTaken ? 'close' : 'check'}
-          onPress={handleToggleDay}
-          style={{ marginTop: 12 }}
-        >
-          {isTaken ? 'Mark as Missed' : 'Mark as Taken on this Date'}
-        </AppButton>
+        {isFuture ? (
+          <View style={styles.precautionBanner}>
+            <MaterialCommunityIcons name="shield-alert-outline" size={22} color="#D97706" />
+            <Text style={styles.precautionText}>
+              <Text style={{ fontWeight: '700', color: '#B45309' }}>Medical Precaution: </Text>
+              Medication intake cannot be logged for future dates to prevent safety hazards, accidental double-dosing, and distorted adherence metrics.
+            </Text>
+          </View>
+        ) : isPastLocked ? (
+          <View style={styles.precautionBannerPast}>
+            <MaterialCommunityIcons name="clock-alert-outline" size={22} color="#475569" />
+            <Text style={styles.precautionTextPast}>
+              <Text style={{ fontWeight: '700', color: '#334155' }}>Clinical Precaution: </Text>
+              Intake records older than yesterday are archived for medical history integrity and cannot be modified retroactively.
+            </Text>
+          </View>
+        ) : (
+          <Text style={styles.infoText}>
+            {isTaken
+              ? 'Adherence verified. You fulfilled your scheduled medication intake.'
+              : selectedDay === todayStr
+              ? 'Did you take your tablets today? Tap below to record your intake.'
+              : 'Did you take your tablets yesterday? Tap below to record before the grace window closes.'}
+          </Text>
+        )}
+
+        {isEditable ? (
+          <AppButton
+            mode={isTaken ? 'outlined' : 'contained'}
+            icon={isTaken ? 'close' : 'check'}
+            onPress={handleToggleDay}
+            style={{ marginTop: 14 }}
+          >
+            {isTaken ? 'Mark as Missed' : 'Mark as Taken on this Date'}
+          </AppButton>
+        ) : (
+          <AppButton
+            disabled
+            mode="outlined"
+            icon="lock"
+            style={{ marginTop: 14, opacity: 0.6, borderColor: '#CBD5E1' }}
+          >
+            {isFuture ? 'Intake Disabled (Future Date)' : 'Intake Locked (Historical Date)'}
+          </AppButton>
+        )}
       </AppCard>
     </ScrollView>
   );
@@ -156,6 +247,7 @@ const styles = StyleSheet.create({
   monthSubtitle: {
     color: '#64748B',
     marginTop: 2,
+    fontSize: 13,
   },
   grid: {
     flexDirection: 'row',
@@ -171,10 +263,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
-  selectedCell: {
+  todayCell: {
     borderWidth: 2,
     borderColor: '#4F46E5',
+  },
+  selectedCell: {
+    borderWidth: 2.5,
+    borderColor: '#0F172A',
+    backgroundColor: '#EEF2FF',
   },
   takenCell: {
     backgroundColor: '#059669',
@@ -182,23 +280,83 @@ const styles = StyleSheet.create({
   missedCell: {
     backgroundColor: '#E11D48',
   },
+  futureCell: {
+    backgroundColor: '#F8FAFC',
+    opacity: 0.5,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  pastLockedCell: {
+    backgroundColor: '#F1F5F9',
+    opacity: 0.65,
+  },
   dayText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#334155',
   },
+  todayDayText: {
+    color: '#4F46E5',
+    fontWeight: '800',
+  },
   takenDayText: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   missedDayText: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   selectedDayText: {
     fontWeight: '900',
+    color: '#0F172A',
+  },
+  futureDayText: {
+    color: '#94A3B8',
+  },
+  pastLockedDayText: {
+    color: '#94A3B8',
+  },
+  cellLockBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
   },
   infoText: {
-    color: '#64748B',
+    color: '#475569',
     fontSize: 13,
+    lineHeight: 19,
+  },
+  precautionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+  },
+  precautionText: {
+    flex: 1,
+    color: '#92400E',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  precautionBannerPast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+  },
+  precautionTextPast: {
+    flex: 1,
+    color: '#475569',
+    fontSize: 12,
     lineHeight: 18,
   },
 });

@@ -118,17 +118,6 @@ async function createTables(p: Pool): Promise<void> {
       FOREIGN KEY (vehicleId) REFERENCES vehicles(id) ON DELETE CASCADE
     );
   `);
-
-  // Seed default Bike if vehicles table is empty
-  const [vehicleRows]: any = await p.query('SELECT COUNT(*) as count FROM vehicles');
-  if (vehicleRows[0].count === 0) {
-    const now = new Date().toISOString();
-    await p.query(
-      `INSERT INTO vehicles (id, name, registrationNumber, expectedMileage, fuelTankCapacity, initialOdometerKm, isActive, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ['bike-commuter-55', 'My Daily Bike', 'TN-01-BK-5500', 55.0, 12.0, 12500.0, true, now, now]
-    );
-  }
 }
 
 export function getMysqlPool(): Pool | null {

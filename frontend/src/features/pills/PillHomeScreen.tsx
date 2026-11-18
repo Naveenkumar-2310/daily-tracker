@@ -23,9 +23,13 @@ export const PillHomeScreen: React.FC = () => {
   // Enable Double Back to Exit on Home Screen
   useDoubleBackToExit(true);
 
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const yesterdayDate = new Date(now);
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayStr = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, "0")}-${String(yesterdayDate.getDate()).padStart(2, "0")}`;
+
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [refreshing, setRefreshing] = useState(false);
   const [hasNotificationPermission, setHasNotificationPermission] = useState(true);
 
@@ -143,6 +147,8 @@ export const PillHomeScreen: React.FC = () => {
             label="Schedule Date"
             value={selectedDate}
             onChange={(d) => setSelectedDate(d)}
+            minDate={yesterdayStr}
+            maxDate={todayStr}
           />
         </View>
         <AppButton

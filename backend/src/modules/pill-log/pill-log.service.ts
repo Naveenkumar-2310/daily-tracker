@@ -9,6 +9,19 @@ export class PillLogService {
   ) {}
 
   public async markPill(dto: IMarkPillDTO): Promise<IPillLog> {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+    if (dto.date > todayStr) {
+      throw new Error('Cannot log medicine intake for future dates as a medical safety precaution');
+    }
+    if (dto.date < yesterdayStr) {
+      throw new Error('Cannot modify intake records older than yesterday for clinical safety precautions');
+    }
+
     const med = await this.medicineRepo.findById(dto.medicineId);
     if (!med) {
       throw new Error(`Medicine with id ${dto.medicineId} not found`);

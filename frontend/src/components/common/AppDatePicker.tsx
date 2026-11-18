@@ -15,6 +15,8 @@ export interface AppDatePickerProps {
   label: string;
   value: string; // YYYY-MM-DD
   onChange: (dateStr: string) => void;
+  minDate?: string; // YYYY-MM-DD
+  maxDate?: string; // YYYY-MM-DD
 }
 
 const MONTH_NAMES = [
@@ -38,6 +40,8 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
   label,
   value,
   onChange,
+  minDate,
+  maxDate,
 }) => {
   const theme = useTheme();
   const [visible, setVisible] = useState(false);
@@ -102,10 +106,24 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
     setVisible(false);
   };
 
-  const setQuickDate = (offsetDays: number) => {
+  const getOffsetDateStr = (offsetDays: number) => {
     const d = new Date();
     d.setDate(d.getDate() + offsetDays);
-    const dateStr = d.toISOString().slice(0, 10);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${mm}-${dd}`;
+  };
+
+  const isQuickDateDisabled = (offsetDays: number) => {
+    const dateStr = getOffsetDateStr(offsetDays);
+    if (minDate && dateStr < minDate) return true;
+    if (maxDate && dateStr > maxDate) return true;
+    return false;
+  };
+
+  const setQuickDate = (offsetDays: number) => {
+    if (isQuickDateDisabled(offsetDays)) return;
+    const dateStr = getOffsetDateStr(offsetDays);
     setSelectedDateStr(dateStr);
     onChange(dateStr);
     setVisible(false);
@@ -135,6 +153,15 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
     const mm = String(currentMonth + 1).padStart(2, "0");
     const dd = String(day).padStart(2, "0");
     return todayStr === `${currentYear}-${mm}-${dd}`;
+  };
+
+  const isDateDisabled = (day: number) => {
+    const mm = String(currentMonth + 1).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    const dateStr = `${currentYear}-${mm}-${dd}`;
+    if (minDate && dateStr < minDate) return true;
+    if (maxDate && dateStr > maxDate) return true;
+    return false;
   };
 
   return (
@@ -172,30 +199,36 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
           <Dialog.Content style={styles.dialogContent}>
             {/* Quick Chips */}
             <View style={styles.quickButtonsRow}>
-              <Chip
-                compact
-                onPress={() => setQuickDate(0)}
-                style={styles.quickChip}
-                textStyle={styles.quickChipText}
-              >
-                Today
-              </Chip>
-              <Chip
-                compact
-                onPress={() => setQuickDate(-1)}
-                style={styles.quickChip}
-                textStyle={styles.quickChipText}
-              >
-                Yesterday
-              </Chip>
-              <Chip
-                compact
-                onPress={() => setQuickDate(-2)}
-                style={styles.quickChip}
-                textStyle={styles.quickChipText}
-              >
-                2 Days Ago
-              </Chip>
+              {!isQuickDateDisabled(0) && (
+                <Chip
+                  compact
+                  onPress={() => setQuickDate(0)}
+                  style={styles.quickChip}
+                  textStyle={styles.quickChipText}
+                >
+                  Today
+                </Chip>
+              )}
+              {!isQuickDateDisabled(-1) && (
+                <Chip
+                  compact
+                  onPress={() => setQuickDate(-1)}
+                  style={styles.quickChip}
+                  textStyle={styles.quickChipText}
+                >
+                  Yesterday
+                </Chip>
+              )}
+              {!isQuickDateDisabled(-2) && (
+                <Chip
+                  compact
+                  onPress={() => setQuickDate(-2)}
+                  style={styles.quickChip}
+                  textStyle={styles.quickChipText}
+                >
+                  2 Days Ago
+                </Chip>
+              )}
             </View>
 
             {/* Month & Year Navigation Header */}
@@ -234,14 +267,17 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
                 }
                 const selected = isSelected(day);
                 const today = isToday(day);
+                const disabled = isDateDisabled(day);
                 return (
                   <TouchableOpacity
                     key={idx}
+                    disabled={disabled}
                     onPress={() => handleSelectDay(day)}
                     style={[
                       styles.dayCell,
                       today && styles.todayCell,
                       selected && styles.selectedCell,
+                      disabled && styles.disabledCell,
                     ]}
                   >
                     <Text
@@ -249,6 +285,7 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
                         styles.dayText,
                         today && styles.todayText,
                         selected && styles.selectedText,
+                        disabled && styles.disabledDayText,
                       ]}
                     >
                       {day}
@@ -396,5 +433,13 @@ const styles = StyleSheet.create({
   selectedText: {
     color: "#FFFFFF",
     fontWeight: "800",
+  },
+  disabledCell: {
+    backgroundColor: "#F8FAFC",
+    opacity: 0.35,
+  },
+  disabledDayText: {
+    color: "#94A3B8",
+    textDecorationLine: "line-through",
   },
 });
