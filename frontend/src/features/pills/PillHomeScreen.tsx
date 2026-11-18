@@ -12,6 +12,7 @@ import { useDoubleBackToExit } from "../../hooks/useDoubleBackToExit";
 import { RootNavigationProp } from "../../navigation/types";
 import { useTodayPillsQuery, useMarkPillMutation, useRestockMedicineMutation, useStreakStatsQuery } from "../../hooks/apiHooks";
 import { extractErrorMessage } from "../../utils/errorUtils";
+import { NotificationService } from "../../services/notificationService";
 
 export const PillHomeScreen: React.FC = () => {
   const navigation = useNavigation<RootNavigationProp>();
@@ -36,7 +37,10 @@ export const PillHomeScreen: React.FC = () => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refetch();
+      const res = await refetch();
+      if (res.data?.medicines && res.data.medicines.length > 0) {
+        NotificationService.syncAllMedicines(res.data.medicines);
+      }
     } finally {
       setRefreshing(false);
     }

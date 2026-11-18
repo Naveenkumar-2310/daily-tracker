@@ -44,6 +44,7 @@ import {
   useDeleteVehicleMutation,
 } from "../../hooks/apiHooks";
 import { extractErrorMessage } from "../../utils/errorUtils";
+import { NotificationService } from "../../services/notificationService";
 
 export const ManageMastersScreen: React.FC = () => {
   const navigation = useNavigation<RootNavigationProp>();
@@ -145,6 +146,17 @@ export const ManageMastersScreen: React.FC = () => {
   const [deletingVehicle, setDeletingVehicle] = useState<any | null>(null);
 
   // --- Medicine Handlers ---
+  const handleTestAlarm = async () => {
+    showLoader("Triggering test alarm chime...");
+    const ok = await NotificationService.triggerTestAlarmNow();
+    hideLoader();
+    if (ok) {
+      showSuccess("🔔 Test alarm triggered! Listen for device chime in 2s.");
+    } else {
+      showError("Please enable Notification permissions in Android Settings.");
+    }
+  };
+
   const onAddMedicine = async (data: MedicineFormData) => {
     const stockNum = parseInt(data.currentStock, 10) || 1;
     const isSingle = stockNum <= 1;
@@ -155,7 +167,7 @@ export const ManageMastersScreen: React.FC = () => {
       // If > 1 tablet: lowStockAlert = 1 (fires 1 day before strip finishes when 1 tablet is left)
       const lowStockAlert = data.refillReminder ? 1 : 0;
 
-      await createMedicineMutation.mutateAsync({
+      const createdMed = await createMedicineMutation.mutateAsync({
         name: data.name.trim(),
         strength: data.strength.trim(),
         dosageForm: "Tablet",
@@ -165,6 +177,17 @@ export const ManageMastersScreen: React.FC = () => {
         currentStock: stockNum,
         lowStockAlert: lowStockAlert,
       });
+
+      if (createdMed) {
+        await NotificationService.schedulePillReminder({
+          medicineId: createdMed.id,
+          medicineName: createdMed.name,
+          strength: createdMed.strength,
+          reminderTime: createdMed.reminderTime,
+          foodRelation: createdMed.foodRelation,
+          alertType: data.alertType,
+        });
+      }
 
       // Reset form fields while remembering tab setting
       resetMedForm({
@@ -183,7 +206,7 @@ export const ManageMastersScreen: React.FC = () => {
       if (isSingle) {
         showSuccess(`⚠️ "${data.name.trim()}" saved with ONLY 1 tablet! Please reorder a new strip today.`);
       } else {
-        showSuccess(`"${data.name.trim()}" added! Refill reminder set for Day ${stockNum - 1} morning.`);
+        showSuccess(`"${data.name.trim()}" added! Daily alarm set for ${data.reminderTime.trim() || "08:30"}.`);
       }
     } catch (e: any) {
       showError(extractErrorMessage(e, "Failed to save tablet"));
@@ -209,7 +232,7 @@ export const ManageMastersScreen: React.FC = () => {
       return;
     }
 
-    showLoader("Updating tablet details...");
+    showLoader("Updating tablet details & alarm...");
     try {
       await updateMedicineMutation.mutateAsync({
         id: editingMed.id,
@@ -222,8 +245,17 @@ export const ManageMastersScreen: React.FC = () => {
           currentStock: parseInt(editMedStock, 10) || 10,
         },
       });
+
+      await NotificationService.schedulePillReminder({
+        medicineId: editingMed.id,
+        medicineName: editMedName.trim(),
+        strength: editMedStrength.trim(),
+        reminderTime: editMedTime.trim() || "08:30",
+        foodRelation: editMedFoodRelation,
+      });
+
       setEditingMed(null);
-      showSuccess(`"${editMedName.trim()}" updated successfully!`);
+      showSuccess(`"${editMedName.trim()}" updated & alarm rescheduled!`);
     } catch (e: any) {
       showError(extractErrorMessage(e, "Failed to update tablet"));
     } finally {
@@ -237,8 +269,9 @@ export const ManageMastersScreen: React.FC = () => {
     showLoader("Removing prescription...");
     try {
       await deleteMedicineMutation.mutateAsync(deletingMed.id);
+      await NotificationService.cancelReminder(deletingMed.id);
       setDeletingMed(null);
-      showSuccess(`"${name}" removed from directory!`);
+      showSuccess(`"${name}" removed and alarm cancelled!`);
     } catch (e: any) {
       showError(extractErrorMessage(e, "Failed to delete medication"));
     } finally {
@@ -343,6 +376,16 @@ export const ManageMastersScreen: React.FC = () => {
 
       {tab === "medicines" ? (
         <>
+          {/* Quick Alarm Test Trigger */}
+          <AppButton
+            mode="contained-tonal"
+            icon="bell-ring-outline"
+            onPress={handleTestAlarm}
+            style={{ marginVertical: 8 }}
+          >
+            🔔 Test Device Alarm & Chime (2s Trigger)
+          </AppButton>
+
           {/* Add Tablet Card with React Hook Form */}
           <AppCard
             title="Add Prescription / Tablet"

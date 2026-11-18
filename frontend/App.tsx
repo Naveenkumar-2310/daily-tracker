@@ -13,9 +13,14 @@ import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { GlobalUiProvider } from './src/context/GlobalUiContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { queryClient } from './src/api/queryClient';
+import { NotificationService } from './src/services/notificationService';
 
 function MainApp() {
   const { theme } = useAppTheme();
+
+  React.useEffect(() => {
+    NotificationService.setupPermissionsAndChannels();
+  }, []);
 
   const navTheme = theme.isDark
     ? {
