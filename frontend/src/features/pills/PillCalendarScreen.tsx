@@ -16,9 +16,6 @@ export const PillCalendarScreen: React.FC = () => {
 
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const yesterdayDate = new Date(now);
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterdayStr = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
 
   const currentMonthStr = todayStr.slice(0, 7);
   const [currentMonth, setCurrentMonth] = useState(currentMonthStr);
@@ -52,16 +49,11 @@ export const PillCalendarScreen: React.FC = () => {
   const isTaken = selectedDayInfo?.allTaken;
 
   const isFuture = selectedDay > todayStr;
-  const isPastLocked = selectedDay < yesterdayStr;
-  const isEditable = !isFuture && !isPastLocked;
+  const isEditable = !isFuture;
 
   const handleToggleDay = async () => {
     if (isFuture) {
       showError('Medical Precaution: Cannot record medication intake for future dates.');
-      return;
-    }
-    if (isPastLocked) {
-      showError('Clinical Precaution: Intake records older than yesterday are locked for safety.');
       return;
     }
 
@@ -98,13 +90,13 @@ export const PillCalendarScreen: React.FC = () => {
           {monthTitle}
         </Text>
         <Text variant="bodySmall" style={styles.monthSubtitle}>
-          Medical Intake Matrix (Only Today and Yesterday are editable)
+          Medical Intake Matrix (Tap any past or current date to log reports)
         </Text>
       </View>
 
       <AppCard
         title="Monthly Adherence Grid"
-        subtitle="🟢 Taken  •  🔴 Missed  •  ⚪ Editable  •  🔒 Locked"
+        subtitle="🟢 Taken  •  🔴 Missed  •  ⚪ Scheduled  •  🔒 Future (Locked)"
       >
         {/* Calendar Grid */}
         <View style={styles.grid}>
@@ -115,9 +107,7 @@ export const PillCalendarScreen: React.FC = () => {
             const hasLog = Boolean(dayRecord && dayRecord.logs?.length > 0);
             const isSelected = selectedDay === dateStr;
             const cellIsToday = dateStr === todayStr;
-            const cellIsYesterday = dateStr === yesterdayStr;
             const cellIsFuture = dateStr > todayStr;
-            const cellIsPastLocked = dateStr < yesterdayStr;
 
             return (
               <TouchableOpacity
@@ -129,7 +119,6 @@ export const PillCalendarScreen: React.FC = () => {
                   taken && styles.takenCell,
                   hasLog && !taken && styles.missedCell,
                   cellIsFuture && styles.futureCell,
-                  cellIsPastLocked && !hasLog && styles.pastLockedCell,
                 ]}
                 onPress={() => setSelectedDay(dateStr)}
                 activeOpacity={0.7}
@@ -142,7 +131,6 @@ export const PillCalendarScreen: React.FC = () => {
                     hasLog && !taken && styles.missedDayText,
                     isSelected && styles.selectedDayText,
                     cellIsFuture && styles.futureDayText,
-                    cellIsPastLocked && !hasLog && styles.pastLockedDayText,
                   ]}
                 >
                   {dayNum}
@@ -150,11 +138,6 @@ export const PillCalendarScreen: React.FC = () => {
                 {cellIsFuture && (
                   <View style={styles.cellLockBadge}>
                     <MaterialCommunityIcons name="lock" size={9} color="#94A3B8" />
-                  </View>
-                )}
-                {cellIsPastLocked && !hasLog && (
-                  <View style={styles.cellLockBadge}>
-                    <MaterialCommunityIcons name="lock-outline" size={9} color="#CBD5E1" />
                   </View>
                 )}
               </TouchableOpacity>
@@ -169,11 +152,11 @@ export const PillCalendarScreen: React.FC = () => {
         subtitle={
           isFuture
             ? '🔒 Future Date (Locked)'
-            : isPastLocked
-            ? (isTaken ? '✓ Taken (Archived Record)' : '🔒 Past Date (Locked)')
             : selectedDay === todayStr
             ? '⚡ Today (Active Intake Window)'
-            : '🕒 Yesterday (Grace Period Window)'
+            : isTaken
+            ? '✓ Taken (Adherence Logged)'
+            : '🕒 Past Date Report'
         }
         style={{ marginTop: 14 }}
       >
@@ -185,21 +168,13 @@ export const PillCalendarScreen: React.FC = () => {
               Medication intake cannot be logged for future dates to prevent safety hazards, accidental double-dosing, and distorted adherence metrics.
             </Text>
           </View>
-        ) : isPastLocked ? (
-          <View style={styles.precautionBannerPast}>
-            <MaterialCommunityIcons name="clock-alert-outline" size={22} color="#475569" />
-            <Text style={styles.precautionTextPast}>
-              <Text style={{ fontWeight: '700', color: '#334155' }}>Clinical Precaution: </Text>
-              Intake records older than yesterday are archived for medical history integrity and cannot be modified retroactively.
-            </Text>
-          </View>
         ) : (
           <Text style={styles.infoText}>
             {isTaken
-              ? 'Adherence verified. You fulfilled your scheduled medication intake.'
+              ? `Adherence verified. You recorded taking your medication on ${selectedDay}.`
               : selectedDay === todayStr
               ? 'Did you take your tablets today? Tap below to record your intake.'
-              : 'Did you take your tablets yesterday? Tap below to record before the grace window closes.'}
+              : `Did you take your tablets on ${selectedDay}? Tap below to update your adherence report.`}
           </Text>
         )}
 
@@ -219,7 +194,7 @@ export const PillCalendarScreen: React.FC = () => {
             icon="lock"
             style={{ marginTop: 14, opacity: 0.6, borderColor: '#CBD5E1' }}
           >
-            {isFuture ? 'Intake Disabled (Future Date)' : 'Intake Locked (Historical Date)'}
+            Intake Disabled (Future Date)
           </AppButton>
         )}
       </AppCard>

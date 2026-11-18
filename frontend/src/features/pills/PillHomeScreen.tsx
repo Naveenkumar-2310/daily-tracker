@@ -132,7 +132,6 @@ export const PillHomeScreen: React.FC = () => {
           label="Schedule Date"
           value={selectedDate}
           onChange={(d) => setSelectedDate(d)}
-          minDate={yesterdayStr}
           maxDate={todayStr}
         />
       </View>
