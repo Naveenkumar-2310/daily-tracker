@@ -89,11 +89,16 @@ async function createTables(p: Pool): Promise<void> {
       expectedMileage DOUBLE NOT NULL DEFAULT 55.0,
       fuelTankCapacity DOUBLE,
       initialOdometerKm DOUBLE NOT NULL DEFAULT 0.0,
+      monthlyBudget DOUBLE DEFAULT 3000.0,
       isActive BOOLEAN DEFAULT TRUE,
       createdAt VARCHAR(50) NOT NULL,
       updatedAt VARCHAR(50) NOT NULL
     );
   `);
+
+  try {
+    await p.query(`ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS monthlyBudget DOUBLE DEFAULT 3000.0;`);
+  } catch {}
 
   await p.query(`
     CREATE TABLE IF NOT EXISTS fuel_logs (

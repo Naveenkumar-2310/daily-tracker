@@ -46,6 +46,7 @@ export class VehicleRepository {
       expectedMileage: dto.expectedMileage,
       fuelTankCapacity: dto.fuelTankCapacity,
       initialOdometerKm: dto.initialOdometerKm,
+      monthlyBudget: dto.monthlyBudget !== undefined ? dto.monthlyBudget : 3000,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -54,8 +55,8 @@ export class VehicleRepository {
     const pool = getMysqlPool();
     if (pool) {
       await pool.query(
-        `INSERT INTO vehicles (id, name, registrationNumber, expectedMileage, fuelTankCapacity, initialOdometerKm, isActive, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO vehicles (id, name, registrationNumber, expectedMileage, fuelTankCapacity, initialOdometerKm, monthlyBudget, isActive, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           newVehicle.id,
           newVehicle.name,
@@ -63,6 +64,7 @@ export class VehicleRepository {
           newVehicle.expectedMileage,
           newVehicle.fuelTankCapacity || null,
           newVehicle.initialOdometerKm,
+          newVehicle.monthlyBudget,
           newVehicle.isActive,
           newVehicle.createdAt,
           newVehicle.updatedAt,
@@ -90,7 +92,7 @@ export class VehicleRepository {
         updatedAt: new Date().toISOString(),
       };
       await pool.query(
-        `UPDATE vehicles SET name = ?, registrationNumber = ?, expectedMileage = ?, fuelTankCapacity = ?, initialOdometerKm = ?, isActive = ?, updatedAt = ?
+        `UPDATE vehicles SET name = ?, registrationNumber = ?, expectedMileage = ?, fuelTankCapacity = ?, initialOdometerKm = ?, monthlyBudget = ?, isActive = ?, updatedAt = ?
          WHERE id = ?`,
         [
           updated.name,
@@ -98,6 +100,7 @@ export class VehicleRepository {
           updated.expectedMileage,
           updated.fuelTankCapacity || null,
           updated.initialOdometerKm,
+          updated.monthlyBudget !== undefined ? updated.monthlyBudget : 3000,
           updated.isActive,
           updated.updatedAt,
           id,

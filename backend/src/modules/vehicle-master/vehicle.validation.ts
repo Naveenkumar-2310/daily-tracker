@@ -6,6 +6,7 @@ export const CreateVehicleSchema = z.object({
   expectedMileage: z.number().positive('Expected mileage must be positive (e.g. 55 km/L)'),
   fuelTankCapacity: z.number().positive().optional(),
   initialOdometerKm: z.number().nonnegative('Initial odometer cannot be negative'),
+  monthlyBudget: z.number().positive().optional(),
 });
 
 export const UpdateVehicleSchema = CreateVehicleSchema.partial().extend({

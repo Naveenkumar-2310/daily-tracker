@@ -5,6 +5,7 @@ export interface IVehicle {
   expectedMileage: number; // e.g. 55 km/L
   fuelTankCapacity?: number;
   initialOdometerKm: number;
+  monthlyBudget?: number; // Monthly petrol budget in ₹ (e.g. 3000)
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -16,6 +17,7 @@ export interface ICreateVehicleDTO {
   expectedMileage: number;
   fuelTankCapacity?: number;
   initialOdometerKm: number;
+  monthlyBudget?: number;
 }
 
 export interface IUpdateVehicleDTO extends Partial<ICreateVehicleDTO> {
