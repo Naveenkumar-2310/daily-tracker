@@ -196,6 +196,35 @@ export const NotificationService = {
   },
 
   /**
+   * Immediately trigger a test alarm in 2 seconds so the user can verify sound and banner
+   */
+  async triggerTestAlarmNow(): Promise<boolean> {
+    try {
+      const hasPermission = await this.setupPermissionsAndChannels();
+      if (!hasPermission) {
+        this.promptToOpenSettings();
+        return false;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "🔔 Test Alarm: Daily Tracker",
+          body: "Your medicine alarm & notification chime are working properly! 🎉",
+          priority: Notifications.AndroidNotificationPriority.MAX,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 2,
+          channelId: "pill-reminders-alarm",
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
    * Sync all active medicines with OS scheduled reminders
    */
   async syncAllMedicines(medicines: Array<any>): Promise<void> {
