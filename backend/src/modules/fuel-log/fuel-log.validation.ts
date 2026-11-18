@@ -7,6 +7,7 @@ export const CreateFuelLogSchema = z.object({
   petrolAmount: z.number().positive('Petrol amount must be greater than 0'),
   fuelPricePerLitre: z.number().positive().optional(),
   litresFilled: z.number().positive().optional(),
+  isFullTank: z.boolean().optional(),
   imageUrl: z.string().optional(),
   notes: z.string().optional(),
 }).refine((data) => data.fuelPricePerLitre !== undefined || data.litresFilled !== undefined, {

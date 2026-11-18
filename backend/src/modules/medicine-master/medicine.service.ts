@@ -34,5 +34,13 @@ export class MedicineService {
       throw new Error(`Medicine with id ${id} not found`);
     }
   }
+
+  public async restockMedicine(id: string, amount: number = 10): Promise<IMedicine> {
+    const updated = await this.medicineRepo.restock(id, amount);
+    if (!updated) {
+      throw new Error(`Medicine with id ${id} not found`);
+    }
+    return updated;
+  }
 }
 

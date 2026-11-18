@@ -9,6 +9,7 @@ export interface IFuelLog {
   litresFilled: number;
   distanceCovered?: number; // km since last refuel
   actualMileage?: number; // km/L
+  isFullTank?: boolean;
   imageUrl?: string;
   notes?: string;
   createdAt: string;
@@ -21,6 +22,7 @@ export interface ICreateFuelLogDTO {
   petrolAmount: number; // in ₹
   fuelPricePerLitre?: number; // price per litre (e.g. 102.5)
   litresFilled?: number; // if entered directly
+  isFullTank?: boolean;
   imageUrl?: string;
   notes?: string;
 }

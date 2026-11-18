@@ -99,6 +99,7 @@ medRouter.get('/', medicineController.getAll);
 medRouter.get('/:id', medicineController.getById);
 medRouter.post('/', validateRequest(CreateMedicineSchema), medicineController.create);
 medRouter.put('/:id', validateRequest(UpdateMedicineSchema), medicineController.update);
+medRouter.post('/:id/restock', medicineController.restock);
 medRouter.delete('/:id', medicineController.delete);
 app.use('/api/v1/medicines', medRouter);
 

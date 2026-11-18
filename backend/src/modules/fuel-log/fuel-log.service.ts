@@ -36,6 +36,7 @@ export class FuelLogService {
     // Find previous odometer to calculate trip distance
     const previousLog = await this.fuelLogRepo.findLatestBefore(dto.vehicleId, dto.odometerKm);
     const previousKm = previousLog ? previousLog.odometerKm : vehicle.initialOdometerKm;
+    const isFullTank = dto.isFullTank !== false;
 
     let distanceCovered: number | undefined;
     let actualMileage: number | undefined;
@@ -43,27 +44,39 @@ export class FuelLogService {
 
     if (dto.odometerKm > previousKm) {
       distanceCovered = Number((dto.odometerKm - previousKm).toFixed(1));
-      actualMileage = Number((distanceCovered / litresFilled).toFixed(2));
 
-      const expected = vehicle.expectedMileage;
-      const perfPct = Number((((actualMileage - expected) / expected) * 100).toFixed(1));
-      const isAbove = actualMileage >= expected;
+      if (isFullTank) {
+        actualMileage = Number((distanceCovered / litresFilled).toFixed(2));
 
-      let message = '';
-      if (isAbove) {
-        message = `Great! Mileage is ${actualMileage} km/L (${perfPct}% above your ${expected} km/L baseline 🎯)`;
+        const expected = vehicle.expectedMileage;
+        const perfPct = Number((((actualMileage - expected) / expected) * 100).toFixed(1));
+        const isAbove = actualMileage >= expected;
+
+        let message = '';
+        if (isAbove) {
+          message = `Great! Mileage is ${actualMileage} km/L (${perfPct}% above your ${expected} km/L baseline 🎯)`;
+        } else {
+          message = `Mileage is ${actualMileage} km/L (${Math.abs(perfPct)}% below your ${expected} km/L baseline). Check tire pressure or traffic conditions.`;
+        }
+
+        mileageAnalysis = {
+          distanceCovered,
+          actualMileage,
+          expectedMileage: expected,
+          performancePercentage: perfPct,
+          isAboveTarget: isAbove,
+          message,
+        };
       } else {
-        message = `Mileage is ${actualMileage} km/L (${Math.abs(perfPct)}% below your ${expected} km/L baseline). Check tire pressure or traffic conditions.`;
+        mileageAnalysis = {
+          distanceCovered,
+          actualMileage: 0,
+          expectedMileage: vehicle.expectedMileage,
+          performancePercentage: 0,
+          isAboveTarget: true,
+          message: `Partial top-up logged (💧). Added ${litresFilled}L (${distanceCovered} km run). Full tank fill needed for exact mileage calculation.`,
+        };
       }
-
-      mileageAnalysis = {
-        distanceCovered,
-        actualMileage,
-        expectedMileage: expected,
-        performancePercentage: perfPct,
-        isAboveTarget: isAbove,
-        message,
-      };
     }
 
     const created = await this.fuelLogRepo.create({

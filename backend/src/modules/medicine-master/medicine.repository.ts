@@ -123,6 +123,22 @@ export class MedicineRepository {
     return med;
   }
 
+  public async restock(id: string, amount: number = 10): Promise<IMedicine | null> {
+    const pool = getMysqlPool();
+    if (pool) {
+      await pool.query('UPDATE medicines SET currentStock = currentStock + ?, updatedAt = ? WHERE id = ?', [amount, new Date().toISOString(), id]);
+      return this.findById(id);
+    }
+
+    const med = this.db.getData().medicines.find((m) => m.id === id);
+    if (!med) return null;
+
+    med.currentStock = (med.currentStock || 0) + amount;
+    med.updatedAt = new Date().toISOString();
+    this.db.save();
+    return med;
+  }
+
   public async delete(id: string): Promise<boolean> {
     const pool = getMysqlPool();
     if (pool) {

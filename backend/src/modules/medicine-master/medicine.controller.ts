@@ -49,5 +49,15 @@ export class MedicineController {
       next(error);
     }
   };
+
+  public restock = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const amount = req.body?.amount ? Number(req.body.amount) : 10;
+      const updated = await this.medicineService.restockMedicine(req.params.id, amount);
+      res.json({ success: true, message: `Successfully restocked ${amount} units`, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 

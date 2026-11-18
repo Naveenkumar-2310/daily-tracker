@@ -28,6 +28,9 @@ export class PillLogService {
     // If marked as TAKEN now and was not previously marked TAKEN, decrement stock
     if (dto.status === 'TAKEN' && !wasAlreadyTaken) {
       await this.medicineRepo.decrementStock(med.id, 1);
+    } else if (wasAlreadyTaken && dto.status !== 'TAKEN') {
+      // Revert stock if previously TAKEN and now changed back
+      await this.medicineRepo.decrementStock(med.id, -1);
     }
 
     return log;
@@ -41,9 +44,11 @@ export class PillLogService {
       strength: string;
       scheduleSlot: string;
       reminderTime: string;
+      foodRelation?: string;
       status: 'TAKEN' | 'MISSED' | 'SKIPPED' | 'PENDING';
       takenAt?: string;
       currentStock: number;
+      lowStockAlert?: number;
     }>;
   }> {
     const today = dateStr || new Date().toISOString().slice(0, 10);
@@ -58,9 +63,11 @@ export class PillLogService {
         strength: med.strength,
         scheduleSlot: med.scheduleSlot,
         reminderTime: med.reminderTime,
+        foodRelation: med.foodRelation || 'AFTER_FOOD',
         status: (log?.status || 'PENDING') as 'TAKEN' | 'MISSED' | 'SKIPPED' | 'PENDING',
         takenAt: log?.takenAt,
         currentStock: med.currentStock,
+        lowStockAlert: med.lowStockAlert,
       };
     });
 
