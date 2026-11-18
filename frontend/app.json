@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Daily Tracker",
+    "slug": "daily-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.naveen.dailytracker",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "CAMERA",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Daily Tracker to access your camera to scan odometer readings."
+        }
+      ],
+      "expo-status-bar",
+      "expo-font"
+    ]
+  }
+}

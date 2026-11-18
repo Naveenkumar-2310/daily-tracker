@@ -1,0 +1,33 @@
+{
+  "medicines": [
+    {
+      "id": "med-leviphil-500",
+      "name": "Leviphil 500",
+      "strength": "500 mg",
+      "dosageForm": "Tablet",
+      "scheduleSlot": "NIGHT",
+      "reminderTime": "21:30",
+      "foodRelation": "AFTER_FOOD",
+      "currentStock": 30,
+      "lowStockAlert": 5,
+      "isActive": true,
+      "createdAt": "2026-11-17T12:25:31.292Z",
+      "updatedAt": "2026-11-17T12:25:31.294Z"
+    }
+  ],
+  "pillLogs": [],
+  "vehicles": [
+    {
+      "id": "bike-commuter-55",
+      "name": "My Daily Bike",
+      "registrationNumber": "TN-01-BK-5500",
+      "expectedMileage": 55,
+      "fuelTankCapacity": 12,
+      "initialOdometerKm": 12500,
+      "isActive": true,
+      "createdAt": "2026-11-17T12:25:31.294Z",
+      "updatedAt": "2026-11-17T12:25:31.294Z"
+    }
+  ],
+  "fuelLogs": []
+}

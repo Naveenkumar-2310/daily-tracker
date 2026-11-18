@@ -1,0 +1,863 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Daily Health & Fuel Mobility Tracker API",
+    "description": "Clean layered REST API for Prescriptions, Adherence Calendar, Petrol Tracking with Custom Vehicle Mileage Targets, and Odometer OCR Analysis",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5001",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Service health check",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "service": { "type": "string" },
+                    "timestamp": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/medicines": {
+      "get": {
+        "summary": "Get all prescriptions in directory",
+        "operationId": "getMedicines",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of medicines",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Medicine" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a new prescription",
+        "operationId": "createMedicine",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateMedicineDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Medicine registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Medicine" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/medicines/{id}": {
+      "get": {
+        "summary": "Get prescription by ID",
+        "operationId": "getMedicineById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prescription details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Medicine" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update prescription details",
+        "operationId": "updateMedicine",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateMedicineDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated prescription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Medicine" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete prescription",
+        "operationId": "deleteMedicine",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pill-logs/today": {
+      "get": {
+        "summary": "Get scheduled medications and status for a specific date",
+        "operationId": "getTodayPillStatus",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "example": "2026-11-18" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intake schedule for date",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "date": { "type": "string" },
+                        "medicines": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TodayMedicineStatus"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pill-logs/mark": {
+      "post": {
+        "summary": "Mark dose as taken, missed, or skipped",
+        "operationId": "markPillDose",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MarkPillDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated log entry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pill-logs/calendar": {
+      "get": {
+        "summary": "Get month calendar matrix with adherence dots",
+        "operationId": "getCalendarMonth",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "example": "2026-11" }
+          },
+          {
+            "name": "medicineId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendar adherence mapping",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pill-logs/stats": {
+      "get": {
+        "summary": "Get overall adherence streak statistics",
+        "operationId": "getPillStats",
+        "parameters": [
+          {
+            "name": "medicineId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Streak and percentage metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/PillStats" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vehicles": {
+      "get": {
+        "summary": "Get all registered vehicles",
+        "operationId": "getVehicles",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of vehicles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Vehicle" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a new vehicle profile",
+        "operationId": "createVehicle",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateVehicleDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vehicle registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Vehicle" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vehicles/{id}": {
+      "get": {
+        "summary": "Get vehicle profile by ID",
+        "operationId": "getVehicleById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vehicle details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Vehicle" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update vehicle profile",
+        "operationId": "updateVehicle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateVehicleDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated vehicle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Vehicle" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete vehicle",
+        "operationId": "deleteVehicle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fuel-logs": {
+      "post": {
+        "summary": "Log a refuel event and compute mileage against benchmark",
+        "operationId": "createFuelLog",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateFuelLogDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Fuel log saved with mileage analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/FuelLog" },
+                    "analysis": {
+                      "$ref": "#/components/schemas/MileageAnalysis"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fuel-logs/history": {
+      "get": {
+        "summary": "Get history of refuel entries",
+        "operationId": "getFuelHistory",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of refuel logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/FuelLog" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fuel-logs/{id}": {
+      "delete": {
+        "summary": "Delete a fuel log entry",
+        "operationId": "deleteFuelLog",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fuel-logs/analytics/{vehicleId}": {
+      "get": {
+        "summary": "Get aggregate fuel and mileage analytics for a vehicle",
+        "operationId": "getFuelAnalytics",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/FuelAnalytics" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ocr/analyze-text": {
+      "post": {
+        "summary": "Parse extracted text for odometer numbers and date patterns",
+        "operationId": "analyzeOcrText",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                  "text": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Detected odometer and date",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "detectedKm": { "type": "number" },
+                        "detectedDate": { "type": "string" },
+                        "confidence": { "type": "number" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Medicine": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "strength",
+          "scheduleSlot",
+          "reminderTime",
+          "currentStock"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "strength": { "type": "string" },
+          "dosageForm": { "type": "string" },
+          "scheduleSlot": {
+            "type": "string",
+            "enum": ["MORNING", "AFTERNOON", "NIGHT", "CUSTOM"]
+          },
+          "reminderTime": { "type": "string" },
+          "foodRelation": {
+            "type": "string",
+            "enum": ["BEFORE_FOOD", "AFTER_FOOD", "WITH_FOOD"]
+          },
+          "currentStock": { "type": "integer" },
+          "lowStockAlert": { "type": "integer" },
+          "isActive": { "type": "boolean" }
+        }
+      },
+      "CreateMedicineDto": {
+        "type": "object",
+        "required": ["name", "strength", "scheduleSlot", "reminderTime"],
+        "properties": {
+          "name": { "type": "string" },
+          "strength": { "type": "string" },
+          "dosageForm": { "type": "string", "default": "Tablet" },
+          "scheduleSlot": {
+            "type": "string",
+            "enum": ["MORNING", "AFTERNOON", "NIGHT", "CUSTOM"]
+          },
+          "reminderTime": { "type": "string" },
+          "foodRelation": {
+            "type": "string",
+            "enum": ["BEFORE_FOOD", "AFTER_FOOD", "WITH_FOOD"],
+            "default": "AFTER_FOOD"
+          },
+          "currentStock": { "type": "integer", "default": 30 },
+          "lowStockAlert": { "type": "integer", "default": 5 }
+        }
+      },
+      "UpdateMedicineDto": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "strength": { "type": "string" },
+          "dosageForm": { "type": "string" },
+          "scheduleSlot": {
+            "type": "string",
+            "enum": ["MORNING", "AFTERNOON", "NIGHT", "CUSTOM"]
+          },
+          "reminderTime": { "type": "string" },
+          "foodRelation": {
+            "type": "string",
+            "enum": ["BEFORE_FOOD", "AFTER_FOOD", "WITH_FOOD"]
+          },
+          "currentStock": { "type": "integer" },
+          "lowStockAlert": { "type": "integer" },
+          "isActive": { "type": "boolean" }
+        }
+      },
+      "TodayMedicineStatus": {
+        "type": "object",
+        "properties": {
+          "medicineId": { "type": "string" },
+          "medicineName": { "type": "string" },
+          "strength": { "type": "string" },
+          "scheduleSlot": { "type": "string" },
+          "reminderTime": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["TAKEN", "MISSED", "SKIPPED", "PENDING"]
+          },
+          "takenAt": { "type": "string" },
+          "currentStock": { "type": "integer" }
+        }
+      },
+      "MarkPillDto": {
+        "type": "object",
+        "required": ["medicineId", "date", "status"],
+        "properties": {
+          "medicineId": { "type": "string" },
+          "date": { "type": "string", "example": "2026-11-18" },
+          "status": { "type": "string", "enum": ["TAKEN", "MISSED", "SKIPPED"] }
+        }
+      },
+      "PillStats": {
+        "type": "object",
+        "properties": {
+          "currentStreak": { "type": "integer" },
+          "longestStreak": { "type": "integer" },
+          "adherencePercentage": { "type": "number" },
+          "totalDoses": { "type": "integer" },
+          "takenDoses": { "type": "integer" },
+          "missedDoses": { "type": "integer" }
+        }
+      },
+      "Vehicle": {
+        "type": "object",
+        "required": ["id", "name", "expectedMileage", "initialOdometerKm"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "registrationNumber": { "type": "string" },
+          "expectedMileage": { "type": "number" },
+          "fuelTankCapacity": { "type": "number" },
+          "initialOdometerKm": { "type": "number" },
+          "isActive": { "type": "boolean" }
+        }
+      },
+      "CreateVehicleDto": {
+        "type": "object",
+        "required": ["name", "expectedMileage"],
+        "properties": {
+          "name": { "type": "string" },
+          "registrationNumber": { "type": "string" },
+          "expectedMileage": { "type": "number" },
+          "fuelTankCapacity": { "type": "number" },
+          "initialOdometerKm": { "type": "number", "default": 0 }
+        }
+      },
+      "UpdateVehicleDto": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "registrationNumber": { "type": "string" },
+          "expectedMileage": { "type": "number" },
+          "fuelTankCapacity": { "type": "number" },
+          "initialOdometerKm": { "type": "number" },
+          "isActive": { "type": "boolean" }
+        }
+      },
+      "FuelLog": {
+        "type": "object",
+        "required": [
+          "id",
+          "vehicleId",
+          "vehicleName",
+          "date",
+          "odometerKm",
+          "petrolAmount",
+          "litresFilled"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "vehicleId": { "type": "string" },
+          "vehicleName": { "type": "string" },
+          "date": { "type": "string" },
+          "odometerKm": { "type": "number" },
+          "petrolAmount": { "type": "number" },
+          "fuelPricePerLitre": { "type": "number" },
+          "litresFilled": { "type": "number" },
+          "distanceCovered": { "type": "number" },
+          "actualMileage": { "type": "number" },
+          "notes": { "type": "string" },
+          "createdAt": { "type": "string" }
+        }
+      },
+      "CreateFuelLogDto": {
+        "type": "object",
+        "required": ["vehicleId", "date", "odometerKm", "petrolAmount"],
+        "properties": {
+          "vehicleId": { "type": "string" },
+          "date": { "type": "string" },
+          "odometerKm": { "type": "number" },
+          "petrolAmount": { "type": "number" },
+          "fuelPricePerLitre": { "type": "number" },
+          "litresFilled": { "type": "number" },
+          "notes": { "type": "string" }
+        }
+      },
+      "MileageAnalysis": {
+        "type": "object",
+        "properties": {
+          "distanceCovered": { "type": "number" },
+          "actualMileage": { "type": "number" },
+          "expectedMileage": { "type": "number" },
+          "isAboveTarget": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      },
+      "FuelAnalytics": {
+        "type": "object",
+        "properties": {
+          "vehicleId": { "type": "string" },
+          "vehicleName": { "type": "string" },
+          "expectedMileage": { "type": "number" },
+          "totalSpent": { "type": "number" },
+          "totalLitres": { "type": "number" },
+          "totalDistanceKm": { "type": "number" },
+          "averageMileage": { "type": "number" },
+          "averageCostPerKm": { "type": "number" },
+          "logsCount": { "type": "integer" }
+        }
+      }
+    }
+  }
+}
