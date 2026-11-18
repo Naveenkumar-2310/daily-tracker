@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, RefreshControl } from "react-native";
+import { View, StyleSheet, RefreshControl, TouchableOpacity } from "react-native";
 import { Text, Chip, useTheme } from "react-native-paper";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { ExtendedTheme } from "../../theme/theme";
@@ -128,8 +128,10 @@ export const PillHomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Adherence Streak Banner */}
-      <View
+      {/* Adherence Streak Banner - Clickable to Calendar */}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate("PillCalendar")}
         style={[
           styles.streakBanner,
           theme.isDark && {
@@ -146,7 +148,7 @@ export const PillHomeScreen: React.FC = () => {
         <View style={styles.streakIconWrap}>
           <Text style={{ fontSize: 18 }}>🔥</Text>
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, paddingRight: 6 }}>
           <Text
             variant="labelLarge"
             style={[
@@ -154,6 +156,7 @@ export const PillHomeScreen: React.FC = () => {
               theme.isDark && { color: "#FBBF24" },
               theme.isHighContrast && { color: "#000000" },
             ]}
+            numberOfLines={1}
           >
             {streakStats?.currentStreakDays || 0}-Day Routine Streak!
           </Text>
@@ -164,28 +167,39 @@ export const PillHomeScreen: React.FC = () => {
               theme.isDark && { color: "#E2E8F0" },
               theme.isHighContrast && { color: "#000000" },
             ]}
+            numberOfLines={1}
           >
-            {streakStats?.takenThisMonth || 0} doses taken on schedule this month
+            {streakStats?.takenThisMonth || 0} doses on schedule • View Calendar →
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
-      {/* Progress & Overview Card */}
+      {/* Progress & Overview Card - Clickable to Calendar */}
       {totalMeds > 0 && (
-        <AppCard style={styles.summaryCard}>
+        <AppCard
+          style={styles.summaryCard}
+          onPress={() => navigation.navigate("PillCalendar")}
+        >
           <View style={styles.summaryRow}>
-            <View>
-              <Text variant="titleMedium" style={styles.summaryTitle}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <Text
+                variant="titleMedium"
+                style={[styles.summaryTitle, { color: theme.colors.onSurface }]}
+                numberOfLines={1}
+              >
                 {isToday ? "Today's Tablet Routine" : `Intake for ${selectedDate}`}
               </Text>
-              <Text variant="bodySmall" style={styles.summarySubtitle}>
-                {takenCount} of {totalMeds} doses completed
+              <Text
+                variant="bodySmall"
+                style={[styles.summarySubtitle, { color: theme.colors.subText }]}
+                numberOfLines={1}
+              >
+                {takenCount} of {totalMeds} doses completed • Tap for Calendar
               </Text>
             </View>
             <View style={styles.progressCircle}>
               <Text style={styles.progressText}>
-                {totalMeds > 0 ? Math.round((takenCount / totalMeds) * 100) : 0}
-                %
+                {totalMeds > 0 ? Math.round((takenCount / totalMeds) * 100) : 0}%
               </Text>
             </View>
           </View>
@@ -205,10 +219,16 @@ export const PillHomeScreen: React.FC = () => {
       {medicines.length === 0 ? (
         <AppCard style={styles.emptyCard}>
           <Text style={styles.emptyIcon}>💊</Text>
-          <Text variant="titleMedium" style={styles.emptyTitle}>
+          <Text
+            variant="titleMedium"
+            style={[styles.emptyTitle, { color: theme.colors.onSurface }]}
+          >
             No Active Tablets
           </Text>
-          <Text variant="bodyMedium" style={styles.emptyText}>
+          <Text
+            variant="bodyMedium"
+            style={[styles.emptyText, { color: theme.colors.subText }]}
+          >
             You haven't configured any tablets yet. Add your daily tablets in
             Directory to schedule automatic reminders and track strip stock.
           </Text>
@@ -232,7 +252,8 @@ export const PillHomeScreen: React.FC = () => {
             <AppCard
               key={item.medicineId}
               title={`${item.medicineName || "Tablet"} • ${item.strength || ""}`}
-              subtitle={`${item.scheduleSlot || "DAILY"} @ ${item.reminderTime || "08:30"} | Strip: ${stock} left`}
+              subtitle={`${item.scheduleSlot || "DAILY"} @ ${item.reminderTime || "08:30"} | Strip: ${stock} left • Tap to edit`}
+              onPress={() => navigation.navigate("Directory", { initialTab: "medicines" })}
               style={[
                 styles.card,
                 isTaken && styles.cardTaken,
@@ -276,8 +297,11 @@ export const PillHomeScreen: React.FC = () => {
               <View style={styles.cardHeaderMeta}>
                 <Chip
                   icon="silverware-fork-knife"
-                  style={styles.foodChip}
-                  textStyle={styles.foodChipText}
+                  style={[
+                    styles.foodChip,
+                    { backgroundColor: theme.colors.surfaceVariant },
+                  ]}
+                  textStyle={[styles.foodChipText, { color: theme.colors.subText || "#475569" }]}
                 >
                   {item.foodRelation === "BEFORE_FOOD"
                     ? "🥣 Before Food"
@@ -378,7 +402,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   content: {
-    padding: 18,
+    padding: 16,
     paddingBottom: 40,
   },
   dateRow: {
@@ -394,8 +418,7 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   summaryCard: {
-    backgroundColor: "#FFFFFF",
-    marginBottom: 14,
+    marginBottom: 12,
     borderLeftWidth: 4,
     borderLeftColor: "#4F46E5",
   },
@@ -406,16 +429,16 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     fontWeight: "700",
-    color: "#0F172A",
+    fontSize: 14.5,
   },
   summarySubtitle: {
-    color: "#64748B",
     marginTop: 2,
+    fontSize: 12,
   },
   progressCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: "#EEF2FF",
     justifyContent: "center",
     alignItems: "center",
@@ -423,33 +446,30 @@ const styles = StyleSheet.create({
   progressText: {
     color: "#4F46E5",
     fontWeight: "800",
-    fontSize: 14,
+    fontSize: 13,
   },
   sectionHeader: {
     fontWeight: "800",
-    color: "#0F172A",
     marginVertical: 10,
     letterSpacing: -0.2,
   },
   emptyCard: {
     alignItems: "center",
-    paddingVertical: 28,
+    paddingVertical: 24,
     paddingHorizontal: 16,
   },
   emptyIcon: {
-    fontSize: 44,
-    marginBottom: 12,
+    fontSize: 40,
+    marginBottom: 10,
   },
   emptyTitle: {
     fontWeight: "700",
-    color: "#0F172A",
     marginBottom: 6,
   },
   emptyText: {
-    color: "#64748B",
     textAlign: "center",
     lineHeight: 20,
-    marginBottom: 18,
+    marginBottom: 16,
     maxWidth: 290,
   },
   addBtn: {
@@ -489,7 +509,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
-    gap: 12,
+    gap: 10,
   },
   streakIconWrap: {
     width: 38,
@@ -502,24 +522,24 @@ const styles = StyleSheet.create({
   streakTitle: {
     fontWeight: "800",
     color: "#C2410C",
+    fontSize: 14,
   },
   streakSub: {
     color: "#9A3412",
-    fontSize: 12,
+    fontSize: 11.5,
   },
   cardHeaderMeta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    flexWrap: "wrap",
+    gap: 6,
     marginBottom: 8,
   },
   foodChip: {
     height: 26,
-    backgroundColor: "#F1F5F9",
   },
   foodChipText: {
     fontSize: 11,
-    color: "#475569",
     fontWeight: "600",
   },
   urgentStockChip: {
@@ -572,7 +592,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: 8,
-    gap: 10,
+    gap: 8,
   },
   takeBtn: {
     flex: 1,

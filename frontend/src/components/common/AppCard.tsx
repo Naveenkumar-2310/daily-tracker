@@ -10,6 +10,7 @@ export interface AppCardProps {
   rightAction?: React.ReactNode;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  onPress?: () => void;
 }
 
 export const AppCard: React.FC<AppCardProps> = ({
@@ -19,6 +20,7 @@ export const AppCard: React.FC<AppCardProps> = ({
   rightAction,
   children,
   style,
+  onPress,
 }) => {
   const theme = useTheme<ExtendedTheme>();
 
@@ -34,6 +36,7 @@ export const AppCard: React.FC<AppCardProps> = ({
         style,
       ]}
       elevation={theme.isDark ? 0 : 2}
+      onPress={onPress}
     >
       {(title || subtitle || rightAction || leftIcon) && (
         <View style={styles.header}>
@@ -50,6 +53,7 @@ export const AppCard: React.FC<AppCardProps> = ({
                       fontWeight: theme.isHighContrast ? '900' : '700',
                     },
                   ]}
+                  numberOfLines={1}
                 >
                   {title}
                 </Text>
@@ -64,6 +68,7 @@ export const AppCard: React.FC<AppCardProps> = ({
                       fontWeight: theme.isHighContrast ? '600' : '400',
                     },
                   ]}
+                  numberOfLines={2}
                 >
                   {subtitle}
                 </Text>
@@ -91,8 +96,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: 14,
     paddingBottom: 4,
   },
   titleRow: {
@@ -105,20 +110,24 @@ const styles = StyleSheet.create({
   },
   titleTextWrapper: {
     flex: 1,
+    paddingRight: 6,
   },
   title: {
     letterSpacing: -0.2,
+    fontSize: 15,
   },
   subtitle: {
     marginTop: 2,
     fontSize: 12,
+    lineHeight: 16,
   },
   actionWrapper: {
-    marginLeft: 8,
+    marginLeft: 6,
+    flexShrink: 0,
   },
   content: {
-    paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 14,
   },
 });

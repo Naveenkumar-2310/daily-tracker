@@ -686,12 +686,18 @@ export const ManageMastersScreen: React.FC = () => {
           </AppCard>
 
           {/* List of Existing Medicines */}
-          <Text variant="titleMedium" style={styles.sectionTitle}>
+          <Text
+            variant="titleMedium"
+            style={[
+              styles.sectionTitle,
+              { color: theme.colors.onSurface, fontWeight: theme.isHighContrast ? "900" : "800" },
+            ]}
+          >
             Registered Tablets ({medicinesList.length})
           </Text>
 
           {medicinesList.length === 0 ? (
-            <Text style={styles.emptyNote}>
+            <Text style={[styles.emptyNote, { color: theme.colors.subText || "#94A3B8" }]}>
               No tablets added yet. Register your first prescription above.
             </Text>
           ) : (
@@ -699,7 +705,8 @@ export const ManageMastersScreen: React.FC = () => {
               <AppCard
                 key={m.id}
                 title={`${m.name} • ${m.strength}`}
-                subtitle={`Slot: ${m.scheduleSlot} @ ${m.reminderTime} | ${m.currentStock} in strip`}
+                subtitle={`Slot: ${m.scheduleSlot} @ ${m.reminderTime} | ${m.currentStock} in strip • Tap to edit`}
+                onPress={() => openEditMedicine(m)}
                 rightAction={
                   <View style={styles.cardActionsRow}>
                     <IconButton
@@ -717,7 +724,7 @@ export const ManageMastersScreen: React.FC = () => {
                   </View>
                 }
               >
-                <Text variant="bodySmall" style={{ color: "#64748B" }}>
+                <Text variant="bodySmall" style={{ color: theme.colors.subText || "#64748B" }}>
                   Protocol: {m.foodRelation === "BEFORE_FOOD" ? "🥣 Before Food" : m.foodRelation === "WITH_FOOD" ? "🥗 With Food" : "🍽️ After Food"} • Stock: {m.currentStock} in strip
                 </Text>
               </AppCard>
@@ -843,12 +850,18 @@ export const ManageMastersScreen: React.FC = () => {
           </AppCard>
 
           {/* List of Existing Vehicles */}
-          <Text variant="titleMedium" style={styles.sectionTitle}>
+          <Text
+            variant="titleMedium"
+            style={[
+              styles.sectionTitle,
+              { color: theme.colors.onSurface, fontWeight: theme.isHighContrast ? "900" : "800" },
+            ]}
+          >
             Registered Vehicles ({vehiclesList.length})
           </Text>
 
           {vehiclesList.length === 0 ? (
-            <Text style={styles.emptyNote}>
+            <Text style={[styles.emptyNote, { color: theme.colors.subText || "#94A3B8" }]}>
               No vehicles registered. Add your bike above.
             </Text>
           ) : (
@@ -856,7 +869,8 @@ export const ManageMastersScreen: React.FC = () => {
               <AppCard
                 key={v.id}
                 title={v.name}
-                subtitle={`Target: ${v.expectedMileage} km/L | Starting ODO: ${v.initialOdometerKm} KM`}
+                subtitle={`Target: ${v.expectedMileage} km/L | Starting ODO: ${v.initialOdometerKm} KM • Tap to edit`}
+                onPress={() => openEditVehicle(v)}
                 rightAction={
                   <View style={styles.cardActionsRow}>
                     <IconButton
@@ -874,7 +888,7 @@ export const ManageMastersScreen: React.FC = () => {
                   </View>
                 }
               >
-                <Text variant="bodySmall" style={{ color: "#64748B" }}>
+                <Text variant="bodySmall" style={{ color: theme.colors.subText || "#64748B" }}>
                   Reg: {v.registrationNumber || "Not specified"} • Budget: ₹{v.monthlyBudget || 3000}/mo • Fuel: Petrol
                 </Text>
               </AppCard>
@@ -888,13 +902,26 @@ export const ManageMastersScreen: React.FC = () => {
         <Modal
           visible={!!editingMed}
           onDismiss={() => setEditingMed(null)}
-          contentContainerStyle={styles.modalContainer}
+          contentContainerStyle={[
+            styles.modalContainer,
+            {
+              backgroundColor: theme.colors.cardBg || theme.colors.surface,
+              borderColor: theme.colors.cardBorder || theme.colors.outline,
+              borderWidth: theme.isHighContrast ? 2 : 1,
+            },
+          ]}
         >
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text variant="titleLarge" style={styles.modalTitle}>
+            <Text
+              variant="titleLarge"
+              style={[styles.modalTitle, { color: theme.colors.onSurface }]}
+            >
               Edit Tablet Prescription
             </Text>
-            <Text variant="bodySmall" style={styles.modalSubtitle}>
+            <Text
+              variant="bodySmall"
+              style={[styles.modalSubtitle, { color: theme.colors.subText }]}
+            >
               Update tablet name, dose, routine slot, or strip count
             </Text>
 
@@ -1030,13 +1057,26 @@ export const ManageMastersScreen: React.FC = () => {
         <Modal
           visible={!!editingVehicle}
           onDismiss={() => setEditingVehicle(null)}
-          contentContainerStyle={styles.modalContainer}
+          contentContainerStyle={[
+            styles.modalContainer,
+            {
+              backgroundColor: theme.colors.cardBg || theme.colors.surface,
+              borderColor: theme.colors.cardBorder || theme.colors.outline,
+              borderWidth: theme.isHighContrast ? 2 : 1,
+            },
+          ]}
         >
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text variant="titleLarge" style={styles.modalTitle}>
+            <Text
+              variant="titleLarge"
+              style={[styles.modalTitle, { color: theme.colors.onSurface }]}
+            >
               Edit Vehicle Profile
             </Text>
-            <Text variant="bodySmall" style={styles.modalSubtitle}>
+            <Text
+              variant="bodySmall"
+              style={[styles.modalSubtitle, { color: theme.colors.subText }]}
+            >
               Update vehicle name, registration number, or mileage benchmark
             </Text>
 
@@ -1132,8 +1172,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   content: {
-    padding: 18,
-    paddingBottom: 60,
+    padding: 16,
+    paddingBottom: 40,
   },
   headerRow: {
     flexDirection: "row",
@@ -1143,17 +1183,14 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     fontWeight: "800",
-    color: "#0F172A",
   },
   segmented: {
     marginBottom: 16,
-    backgroundColor: "#FFFFFF",
   },
   sectionTitle: {
-    marginTop: 22,
+    marginTop: 20,
     marginBottom: 8,
     fontWeight: "800",
-    color: "#0F172A",
     letterSpacing: -0.2,
   },
   actionBtn: {
@@ -1165,24 +1202,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyNote: {
-    color: "#94A3B8",
     textAlign: "center",
     marginVertical: 14,
     fontSize: 13,
   },
   modalContainer: {
-    backgroundColor: "#FFFFFF",
-    margin: 20,
-    padding: 24,
-    borderRadius: 20,
+    margin: 16,
+    padding: 20,
+    borderRadius: 18,
     maxHeight: "85%",
   },
   modalTitle: {
     fontWeight: "800",
-    color: "#0F172A",
   },
   modalSubtitle: {
-    color: "#64748B",
     marginBottom: 16,
     marginTop: 2,
   },
@@ -1213,10 +1246,8 @@ const styles = StyleSheet.create({
   },
   refillTitle: {
     fontWeight: "700",
-    color: "#0F172A",
   },
   refillSub: {
-    color: "#64748B",
     marginTop: 2,
     fontSize: 12,
   },

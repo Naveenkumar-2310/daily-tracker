@@ -180,8 +180,10 @@ export const DashboardScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Gamified Adherence Streak Card */}
-      <View
+      {/* Gamified Adherence Streak Card - Clickable to Calendar/Routine */}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate("PillCalendar")}
         style={[
           styles.streakCard,
           theme.isDark && {
@@ -198,7 +200,7 @@ export const DashboardScreen: React.FC = () => {
         <View style={styles.streakIconWrap}>
           <Text style={{ fontSize: 22 }}>🔥</Text>
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, paddingRight: 6 }}>
           <Text
             variant="titleMedium"
             style={[
@@ -206,6 +208,7 @@ export const DashboardScreen: React.FC = () => {
               theme.isDark && { color: "#FBBF24" },
               theme.isHighContrast && { color: "#000000" },
             ]}
+            numberOfLines={1}
           >
             {streakStats?.currentStreakDays || 0}-Day Routine Streak!
           </Text>
@@ -216,74 +219,216 @@ export const DashboardScreen: React.FC = () => {
               theme.isDark && { color: "#E2E8F0" },
               theme.isHighContrast && { color: "#000000" },
             ]}
+            numberOfLines={1}
           >
-            {takenDoses} of {totalDoses} doses taken today • {streakStats?.takenThisMonth || 0} taken this month
+            {takenDoses} of {totalDoses} doses taken today • View Calendar →
           </Text>
         </View>
         <Chip style={styles.streakChip} textStyle={styles.streakChipText}>
           {adherencePercent}% Today
         </Chip>
-      </View>
+      </TouchableOpacity>
 
-      {/* Quick Action Matrix */}
+      {/* Quick Action Matrix - Themed & Responsive */}
       <View style={styles.quickGrid}>
         <TouchableOpacity
-          style={[styles.quickCard, { backgroundColor: "#EEF2FF" }]}
+          style={[
+            styles.quickCard,
+            {
+              backgroundColor: theme.isDark
+                ? "rgba(79, 70, 229, 0.2)"
+                : theme.isHighContrast
+                  ? "#FFFFFF"
+                  : "#EEF2FF",
+              borderColor: theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "rgba(99, 102, 241, 0.4)"
+                  : "transparent",
+              borderWidth: theme.isHighContrast ? 2 : theme.isDark ? 1 : 0,
+            },
+          ]}
           onPress={() => navigation.navigate("Health")}
           activeOpacity={0.8}
         >
-          <MaterialCommunityIcons name="pill" size={26} color="#4F46E5" />
-          <Text style={[styles.quickCardLabel, { color: "#4F46E5" }]}>
-            Pill Schedule
+          <MaterialCommunityIcons
+            name="pill"
+            size={24}
+            color={
+              theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "#A5B4FC"
+                  : "#4F46E5"
+            }
+          />
+          <Text
+            style={[
+              styles.quickCardLabel,
+              {
+                color: theme.isHighContrast
+                  ? "#000000"
+                  : theme.isDark
+                    ? "#A5B4FC"
+                    : "#4F46E5",
+              },
+            ]}
+            numberOfLines={1}
+          >
+            Pill Routine
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickCard, { backgroundColor: "#FEF3C7" }]}
-          onPress={() => navigation.navigate("Fuel")}
+          style={[
+            styles.quickCard,
+            {
+              backgroundColor: theme.isDark
+                ? "rgba(217, 119, 6, 0.2)"
+                : theme.isHighContrast
+                  ? "#FFFFFF"
+                  : "#FEF3C7",
+              borderColor: theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "rgba(245, 158, 11, 0.4)"
+                  : "transparent",
+              borderWidth: theme.isHighContrast ? 2 : theme.isDark ? 1 : 0,
+            },
+          ]}
+          onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle?.id })}
           activeOpacity={0.8}
         >
           <MaterialCommunityIcons
             name="gas-station"
-            size={26}
-            color="#D97706"
+            size={24}
+            color={
+              theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "#FCD34D"
+                  : "#D97706"
+            }
           />
-          <Text style={[styles.quickCardLabel, { color: "#D97706" }]}>
+          <Text
+            style={[
+              styles.quickCardLabel,
+              {
+                color: theme.isHighContrast
+                  ? "#000000"
+                  : theme.isDark
+                    ? "#FCD34D"
+                    : "#D97706",
+              },
+            ]}
+            numberOfLines={1}
+          >
             Fuel Log
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickCard, { backgroundColor: "#ECFDF5" }]}
+          style={[
+            styles.quickCard,
+            {
+              backgroundColor: theme.isDark
+                ? "rgba(5, 150, 105, 0.2)"
+                : theme.isHighContrast
+                  ? "#FFFFFF"
+                  : "#ECFDF5",
+              borderColor: theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "rgba(16, 185, 129, 0.4)"
+                  : "transparent",
+              borderWidth: theme.isHighContrast ? 2 : theme.isDark ? 1 : 0,
+            },
+          ]}
           onPress={() => navigation.navigate("PillCalendar")}
           activeOpacity={0.8}
         >
           <MaterialCommunityIcons
             name="calendar-month"
-            size={26}
-            color="#059669"
+            size={24}
+            color={
+              theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "#6EE7B7"
+                  : "#059669"
+            }
           />
-          <Text style={[styles.quickCardLabel, { color: "#059669" }]}>
+          <Text
+            style={[
+              styles.quickCardLabel,
+              {
+                color: theme.isHighContrast
+                  ? "#000000"
+                  : theme.isDark
+                    ? "#6EE7B7"
+                    : "#059669",
+              },
+            ]}
+            numberOfLines={1}
+          >
             Calendar
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickCard, { backgroundColor: "#F1F5F9" }]}
+          style={[
+            styles.quickCard,
+            {
+              backgroundColor: theme.isDark
+                ? "rgba(148, 163, 184, 0.15)"
+                : theme.isHighContrast
+                  ? "#FFFFFF"
+                  : "#F1F5F9",
+              borderColor: theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "rgba(148, 163, 184, 0.3)"
+                  : "transparent",
+              borderWidth: theme.isHighContrast ? 2 : theme.isDark ? 1 : 0,
+            },
+          ]}
           onPress={() => navigation.navigate("Directory")}
           activeOpacity={0.8}
         >
-          <MaterialCommunityIcons name="folder-cog" size={26} color="#334155" />
-          <Text style={[styles.quickCardLabel, { color: "#334155" }]}>
+          <MaterialCommunityIcons
+            name="folder-cog"
+            size={24}
+            color={
+              theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "#CBD5E1"
+                  : "#334155"
+            }
+          />
+          <Text
+            style={[
+              styles.quickCardLabel,
+              {
+                color: theme.isHighContrast
+                  ? "#000000"
+                  : theme.isDark
+                    ? "#CBD5E1"
+                    : "#334155",
+              },
+            ]}
+            numberOfLines={1}
+          >
             Directory
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Medication Adherence Section */}
+      {/* Medication Adherence Section - Clickable to Health Screen */}
       <AppCard
         title="Medication Routine"
-        subtitle={`Today: ${takenDoses} of ${totalDoses} doses taken`}
+        subtitle={`Today: ${takenDoses} of ${totalDoses} doses taken • Tap to open`}
+        onPress={() => navigation.navigate("Health")}
         rightAction={
           <Chip style={styles.percentChip} textStyle={styles.percentChipText}>
             {adherencePercent}% Adherence
@@ -292,7 +437,7 @@ export const DashboardScreen: React.FC = () => {
       >
         {medicines.length === 0 ? (
           <View style={styles.emptyCardContent}>
-            <Text style={{ color: "#64748B", fontSize: 13, marginBottom: 8 }}>
+            <Text style={{ color: theme.colors.subText || "#64748B", fontSize: 13, marginBottom: 8 }}>
               No medications configured in directory yet.
             </Text>
             <AppButton
@@ -309,14 +454,32 @@ export const DashboardScreen: React.FC = () => {
           medicines.map((m) => {
             const isTaken = m.status === "TAKEN";
             return (
-              <View key={m.medicineId} style={styles.medRow}>
-                <View style={{ flex: 1 }}>
-                  <Text variant="titleSmall" style={styles.medTitle}>
+              <TouchableOpacity
+                key={m.medicineId}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate("Health")}
+                style={[
+                  styles.medRow,
+                  {
+                    borderBottomColor:
+                      theme.colors.cardBorder || theme.colors.outline || "#F1F5F9",
+                  },
+                ]}
+              >
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text
+                    variant="titleSmall"
+                    style={[styles.medTitle, { color: theme.colors.onSurface }]}
+                    numberOfLines={1}
+                  >
                     {m.medicineName} • {m.strength}
                   </Text>
-                  <Text variant="bodySmall" style={styles.medSubtitle}>
-                    {m.scheduleSlot} @ {m.reminderTime} | Stock:{" "}
-                    {m.currentStock}
+                  <Text
+                    variant="bodySmall"
+                    style={[styles.medSubtitle, { color: theme.colors.subText }]}
+                    numberOfLines={1}
+                  >
+                    {m.scheduleSlot} @ {m.reminderTime} | Stock: {m.currentStock}
                   </Text>
                 </View>
 
@@ -337,13 +500,13 @@ export const DashboardScreen: React.FC = () => {
                     Take
                   </AppButton>
                 )}
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
       </AppCard>
 
-      {/* Vehicle & Mileage Target Section */}
+      {/* Vehicle & Mileage Target Section - Clickable to Fuel Screen */}
       <AppCard
         title="Vehicle & Mileage Target"
         subtitle={
@@ -351,6 +514,7 @@ export const DashboardScreen: React.FC = () => {
             ? `${currentVehicle.name} • Target: ${currentVehicle.expectedMileage} km/L`
             : "No vehicle profile registered"
         }
+        onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle?.id })}
         rightAction={
           currentVehicle ? (
             <Chip style={styles.targetChip} textStyle={styles.targetChipText}>
@@ -394,47 +558,67 @@ export const DashboardScreen: React.FC = () => {
               </View>
             )}
 
-            {/* Target Comparison Badge */}
-            {mileageDiff !== null ? (
-              <View
-                style={[
-                  styles.targetBadge,
-                  isAboveTarget
-                    ? styles.targetBadgeAbove
-                    : styles.targetBadgeBelow,
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={isAboveTarget ? "trending-up" : "trending-down"}
-                  size={18}
-                  color={isAboveTarget ? "#059669" : "#DC2626"}
-                />
-                <Text
+            {/* Target Comparison Badge - Clickable to Fuel */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle.id })}
+            >
+              {mileageDiff !== null ? (
+                <View
                   style={[
-                    styles.targetBadgeText,
-                    { color: isAboveTarget ? "#059669" : "#DC2626" },
+                    styles.targetBadge,
+                    isAboveTarget
+                      ? styles.targetBadgeAbove
+                      : styles.targetBadgeBelow,
+                    theme.isDark && {
+                      backgroundColor: isAboveTarget
+                        ? "rgba(5, 150, 105, 0.2)"
+                        : "rgba(220, 38, 38, 0.2)",
+                      borderColor: isAboveTarget ? "#059669" : "#DC2626",
+                    },
                   ]}
                 >
-                  {isAboveTarget
-                    ? `+${mileageDiff} km/L Above Target (${latestFuel?.actualMileage} vs ${currentVehicle.expectedMileage} km/L)`
-                    : `${mileageDiff} km/L Below Target (${latestFuel?.actualMileage} vs ${currentVehicle.expectedMileage} km/L)`}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.targetBadgeNeutral}>
-                <MaterialCommunityIcons
-                  name="information-outline"
-                  size={16}
-                  color="#64748B"
-                />
-                <Text style={styles.targetBadgeNeutralText}>
-                  Baseline: {currentVehicle.expectedMileage} km/L target • Initial Odometer:{" "}
-                  {currentVehicle.initialOdometerKm} km
-                </Text>
-              </View>
-            )}
+                  <MaterialCommunityIcons
+                    name={isAboveTarget ? "trending-up" : "trending-down"}
+                    size={18}
+                    color={isAboveTarget ? "#059669" : "#DC2626"}
+                  />
+                  <Text
+                    style={[
+                      styles.targetBadgeText,
+                      { color: isAboveTarget ? (theme.isDark ? "#34D399" : "#059669") : (theme.isDark ? "#F87171" : "#DC2626") },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {isAboveTarget
+                      ? `+${mileageDiff} km/L Above Target (${latestFuel?.actualMileage} vs ${currentVehicle.expectedMileage} km/L)`
+                      : `${mileageDiff} km/L Below Target (${latestFuel?.actualMileage} vs ${currentVehicle.expectedMileage} km/L)`}
+                  </Text>
+                </View>
+              ) : (
+                <View
+                  style={[
+                    styles.targetBadgeNeutral,
+                    {
+                      backgroundColor: theme.colors.metricBoxBg,
+                      borderColor: theme.colors.cardBorder || theme.colors.outline,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="information-outline"
+                    size={16}
+                    color={theme.colors.subText || "#64748B"}
+                  />
+                  <Text style={[styles.targetBadgeNeutralText, { color: theme.colors.subText || "#64748B" }]}>
+                    Baseline: {currentVehicle.expectedMileage} km/L target • Initial Odometer:{" "}
+                    {currentVehicle.initialOdometerKm} km
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
 
-            {/* 4-Metric Grid */}
+            {/* 4-Metric Grid - Each Metric is Clickable to Fuel Screen */}
             <View
               style={[
                 styles.metricsGrid,
@@ -445,10 +629,16 @@ export const DashboardScreen: React.FC = () => {
                 },
               ]}
             >
-              <View style={styles.metricGridItem}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle.id })}
+                style={styles.metricGridItem}
+              >
                 <Text
                   variant="headlineSmall"
                   style={[styles.metricVal, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {latestFuel?.actualMileage != null
                     ? `${latestFuel.actualMileage}`
@@ -457,21 +647,29 @@ export const DashboardScreen: React.FC = () => {
                 <Text
                   variant="labelSmall"
                   style={[styles.metricLabel, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
                 >
                   Last km/L
                 </Text>
                 <Text
                   variant="labelSmall"
                   style={[styles.metricSub, { color: theme.colors.subText }]}
+                  numberOfLines={1}
                 >
                   Latest Fill
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={styles.metricGridItem}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle.id })}
+                style={styles.metricGridItem}
+              >
                 <Text
                   variant="headlineSmall"
                   style={[styles.metricVal, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {analytics?.averageMileage != null && analytics.averageMileage > 0
                     ? `${analytics.averageMileage}`
@@ -480,42 +678,58 @@ export const DashboardScreen: React.FC = () => {
                 <Text
                   variant="labelSmall"
                   style={[styles.metricLabel, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
                 >
                   Avg km/L
                 </Text>
                 <Text
                   variant="labelSmall"
                   style={[styles.metricSub, { color: theme.colors.subText }]}
+                  numberOfLines={1}
                 >
                   Lifetime
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={styles.metricGridItem}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle.id })}
+                style={styles.metricGridItem}
+              >
                 <Text
                   variant="headlineSmall"
                   style={[styles.metricVal, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {latestFuel?.odometerKm || currentVehicle.initialOdometerKm}
                 </Text>
                 <Text
                   variant="labelSmall"
                   style={[styles.metricLabel, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
                 >
                   Odometer KM
                 </Text>
                 <Text
                   variant="labelSmall"
                   style={[styles.metricSub, { color: theme.colors.subText }]}
+                  numberOfLines={1}
                 >
                   Current
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={styles.metricGridItem}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle.id })}
+                style={styles.metricGridItem}
+              >
                 <Text
                   variant="headlineSmall"
                   style={[styles.metricVal, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {analytics?.averageCostPerKm != null && analytics.averageCostPerKm > 0
                     ? `₹${analytics.averageCostPerKm}`
@@ -524,21 +738,25 @@ export const DashboardScreen: React.FC = () => {
                 <Text
                   variant="labelSmall"
                   style={[styles.metricLabel, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
                 >
                   Cost / km
                 </Text>
                 <Text
                   variant="labelSmall"
                   style={[styles.metricSub, { color: theme.colors.subText }]}
+                  numberOfLines={1}
                 >
                   Running Cost
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
-            {/* Quick Analytics Summary Strip */}
+            {/* Quick Analytics Summary Strip - Clickable to Fuel */}
             {vehicleFuel.length > 0 && (
-              <View
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle.id })}
                 style={[
                   styles.summaryStrip,
                   {
@@ -555,20 +773,34 @@ export const DashboardScreen: React.FC = () => {
                 <Text
                   style={[
                     styles.summaryStripText,
-                    { color: theme.colors.subText || "#475569" },
+                    { color: theme.colors.subText || "#475569", flex: 1 },
                   ]}
+                  numberOfLines={1}
                 >
-                  {vehicleFuel.length} refuels logged • {analytics?.totalDistanceKm || 0} km tracked • ₹{analytics?.totalSpent || 0} spent
+                  {vehicleFuel.length} refuels • {analytics?.totalDistanceKm || 0} km • ₹{analytics?.totalSpent || 0} spent
                 </Text>
-              </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={16}
+                  color={theme.colors.subText || "#475569"}
+                />
+              </TouchableOpacity>
             )}
 
-            {/* Maintenance & Engine Oil Service Reminder */}
-            <View
+            {/* Maintenance & Engine Oil Service Reminder - Clickable to Fuel */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle.id })}
               style={[
                 styles.maintenanceBanner,
                 isOilDueSoon
-                  ? styles.maintenanceBannerUrgent
+                  ? [
+                      styles.maintenanceBannerUrgent,
+                      theme.isDark && {
+                        backgroundColor: "#450A0A",
+                        borderColor: "#DC2626",
+                      },
+                    ]
                   : [
                       styles.maintenanceBannerNormal,
                       {
@@ -582,13 +814,15 @@ export const DashboardScreen: React.FC = () => {
               <MaterialCommunityIcons
                 name={isOilDueSoon ? "wrench-clock" : "wrench-outline"}
                 size={20}
-                color={isOilDueSoon ? "#DC2626" : theme.colors.subText}
+                color={isOilDueSoon ? (theme.isDark ? "#F87171" : "#DC2626") : theme.colors.subText}
               />
               <View style={{ flex: 1, marginLeft: 10 }}>
                 <Text
                   style={[
                     styles.maintenanceTitle,
-                    isOilDueSoon ? { color: "#991B1B" } : { color: theme.colors.onSurface },
+                    isOilDueSoon
+                      ? { color: theme.isDark ? "#FCA5A5" : "#991B1B" }
+                      : { color: theme.colors.onSurface },
                   ]}
                 >
                   {isOilDueSoon
@@ -604,10 +838,17 @@ export const DashboardScreen: React.FC = () => {
                   Routine cycle every 3,000 km ensures peak engine life & top mileage
                 </Text>
               </View>
-            </View>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={18}
+                color={theme.colors.subText || "#64748B"}
+              />
+            </TouchableOpacity>
 
-            {/* Monthly Fuel Expense Budget Tracker */}
-            <View
+            {/* Monthly Fuel Expense Budget Tracker - Clickable to Directory/Vehicles to edit budget */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate("Directory", { initialTab: "vehicles" })}
               style={[
                 styles.budgetWrap,
                 {
@@ -652,14 +893,17 @@ export const DashboardScreen: React.FC = () => {
                   ]}
                 />
               </View>
-            </View>
+              <Text style={{ fontSize: 10, color: theme.colors.subText, marginTop: 4, textAlign: "right" }}>
+                Tap to edit vehicle budget in Directory →
+              </Text>
+            </TouchableOpacity>
 
             {/* Action Buttons */}
             <View style={styles.actionRow}>
               <AppButton
                 mode="contained"
                 icon="gas-station"
-                onPress={() => navigation.navigate("Fuel")}
+                onPress={() => navigation.navigate("Fuel", { vehicleId: currentVehicle.id })}
                 style={styles.logFuelBtn}
               >
                 Log New Refuel
@@ -694,14 +938,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   content: {
-    padding: 18,
-    paddingBottom: 50,
+    padding: 16,
+    paddingBottom: 40,
   },
   welcomeBanner: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   welcomeTitle: {
     fontWeight: "800",
@@ -711,22 +955,24 @@ const styles = StyleSheet.create({
   quickGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
-    marginBottom: 16,
+    gap: 6,
+    marginBottom: 14,
   },
   quickCard: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 6,
-    borderRadius: 14,
+    minHeight: 74,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   quickCardLabel: {
     fontWeight: "700",
-    fontSize: 11,
-    marginTop: 6,
+    fontSize: 10.5,
+    marginTop: 4,
     textAlign: "center",
+    lineHeight: 13,
   },
   percentChip: {
     backgroundColor: "#EEF2FF",
@@ -741,17 +987,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
   },
   medTitle: {
     fontWeight: "700",
     color: "#0F172A",
+    fontSize: 13.5,
   },
   medSubtitle: {
     color: "#64748B",
     marginTop: 2,
+    fontSize: 12,
   },
   takenChip: {
     backgroundColor: "#ECFDF5",
@@ -779,7 +1027,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   vehicleSelectorWrapper: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   vehicleSelectorContent: {
     gap: 8,
@@ -806,9 +1054,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 6,
   },
   targetBadgeAbove: {
@@ -822,8 +1070,9 @@ const styles = StyleSheet.create({
     borderColor: "#FECACA",
   },
   targetBadgeText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "700",
+    flex: 1,
   },
   targetBadgeNeutral: {
     flexDirection: "row",
@@ -834,37 +1083,39 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 10,
     borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 6,
   },
   targetBadgeNeutralText: {
     fontSize: 11,
     color: "#64748B",
     fontWeight: "500",
+    flex: 1,
   },
   metricsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
     backgroundColor: "#F8FAFC",
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     marginBottom: 10,
   },
   metricGridItem: {
     flex: 1,
     alignItems: "center",
+    paddingHorizontal: 2,
   },
   metricVal: {
     fontWeight: "800",
     color: "#0F172A",
-    fontSize: 18,
+    fontSize: 16,
   },
   metricLabel: {
     color: "#0F172A",
     fontWeight: "700",
     marginTop: 2,
-    fontSize: 11,
+    fontSize: 10.5,
   },
   metricSub: {
     color: "#64748B",
@@ -875,12 +1126,12 @@ const styles = StyleSheet.create({
   summaryStrip: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
     backgroundColor: "#F1F5F9",
-    borderRadius: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    marginBottom: 12,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
     gap: 6,
   },
   summaryStripText: {
@@ -889,7 +1140,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   actionRow: {
-    marginTop: 2,
+    marginTop: 4,
   },
   logFuelBtn: {
     backgroundColor: "#D97706",
@@ -901,14 +1152,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FFEDD5",
     borderRadius: 14,
-    padding: 14,
-    marginBottom: 14,
-    gap: 12,
+    padding: 12,
+    marginBottom: 12,
+    gap: 10,
   },
   streakIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#FFEDD5",
     justifyContent: "center",
     alignItems: "center",
@@ -917,10 +1168,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#C2410C",
     letterSpacing: -0.2,
+    fontSize: 14,
   },
   streakSubtitle: {
     color: "#9A3412",
-    fontSize: 12,
+    fontSize: 11.5,
     marginTop: 2,
   },
   streakChip: {
@@ -964,7 +1216,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   budgetHeader: {
     flexDirection: "row",

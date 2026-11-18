@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Chip, IconButton, HelperText, SegmentedButtons, useTheme } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ExtendedTheme } from '../../theme/theme';
@@ -26,6 +26,7 @@ import { extractErrorMessage } from '../../utils/errorUtils';
 
 export const PetrolEntryScreen: React.FC = () => {
   const navigation = useNavigation<RootNavigationProp>();
+  const route = useRoute<any>();
   const theme = useTheme<ExtendedTheme>();
   const { showLoader, hideLoader, showError, showSuccess } = useGlobalUi();
 
@@ -64,9 +65,12 @@ export const PetrolEntryScreen: React.FC = () => {
     },
   });
 
-  // Sync initial vehicle selection when vehicles list loads
+  // Sync initial vehicle selection when vehicles list loads or when navigated with vehicleId
   useEffect(() => {
-    if (vehicles.length > 0) {
+    if (route.params?.vehicleId) {
+      setSelectedVehicleId(route.params.vehicleId);
+      setValue('vehicleId', route.params.vehicleId, { shouldValidate: true });
+    } else if (vehicles.length > 0) {
       if (!selectedVehicleId || !vehicles.some((v) => v.id === selectedVehicleId)) {
         const firstId = vehicles[0].id;
         setSelectedVehicleId(firstId);
@@ -76,7 +80,7 @@ export const PetrolEntryScreen: React.FC = () => {
       setSelectedVehicleId('');
       setValue('vehicleId', '');
     }
-  }, [vehicles, selectedVehicleId, setValue]);
+  }, [vehicles, selectedVehicleId, route.params?.vehicleId, setValue]);
 
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId) || null;
 
@@ -162,9 +166,10 @@ export const PetrolEntryScreen: React.FC = () => {
         title="Vehicle Profile"
         subtitle={
           selectedVehicle
-            ? `Target Mileage: ${selectedVehicle.expectedMileage} km/L`
+            ? `Target Mileage: ${selectedVehicle.expectedMileage} km/L • Tap to manage`
             : 'No vehicle registered'
         }
+        onPress={() => navigation.navigate('Directory', { initialTab: 'vehicles' })}
         rightAction={
           <AppButton
             mode="text"
@@ -191,7 +196,7 @@ export const PetrolEntryScreen: React.FC = () => {
           </>
         ) : (
           <View style={{ paddingVertical: 6 }}>
-            <Text variant="bodySmall" style={{ color: '#64748B', marginBottom: 10 }}>
+            <Text variant="bodySmall" style={{ color: theme.colors.subText || '#64748B', marginBottom: 10 }}>
               No vehicles found in your directory. Register your bike below to start calculating
               trip mileage.
             </Text>
@@ -239,8 +244,20 @@ export const PetrolEntryScreen: React.FC = () => {
           control={control}
           name="isFullTank"
           render={({ field: { onChange, value } }) => (
-            <View style={styles.refuelModeWrap}>
-              <Text variant="labelSmall" style={styles.refuelModeLabel}>
+            <View
+              style={[
+                styles.refuelModeWrap,
+                {
+                  backgroundColor: theme.colors.metricBoxBg,
+                  borderColor: theme.colors.cardBorder || theme.colors.outline,
+                  borderWidth: theme.isHighContrast ? 2 : 1,
+                },
+              ]}
+            >
+              <Text
+                variant="labelSmall"
+                style={[styles.refuelModeLabel, { color: theme.colors.onSurface }]}
+              >
                 Refuel Mode:
               </Text>
               <SegmentedButtons
@@ -258,7 +275,10 @@ export const PetrolEntryScreen: React.FC = () => {
                 ]}
                 style={{ marginBottom: 6 }}
               />
-              <Text variant="bodySmall" style={styles.refuelModeHint}>
+              <Text
+                variant="bodySmall"
+                style={[styles.refuelModeHint, { color: theme.colors.subText }]}
+              >
                 {value
                   ? '🎯 Full Tank: Automatically calculates exact km/L mileage.'
                   : '💧 Partial Top-up (₹100/₹200): Accumulates litres; true mileage computes on next full tank.'}
@@ -392,11 +412,22 @@ export const PetrolEntryScreen: React.FC = () => {
       )}
 
       {/* Refuel History */}
-      <Text variant="titleMedium" style={styles.historyTitle}>
+      <Text
+        variant="titleMedium"
+        style={[
+          styles.historyTitle,
+          {
+            color: theme.colors.onSurface,
+            fontWeight: theme.isHighContrast ? '900' : '800',
+          },
+        ]}
+      >
         Recent Refuel Records
       </Text>
       {recentLogs.length === 0 ? (
-        <Text style={styles.emptyText}>No refuel logs recorded yet.</Text>
+        <Text style={[styles.emptyText, { color: theme.colors.subText || '#94A3B8' }]}>
+          No refuel logs recorded yet.
+        </Text>
       ) : (
         recentLogs.map((log: any) => (
           <AppCard
@@ -423,7 +454,7 @@ export const PetrolEntryScreen: React.FC = () => {
               </View>
             }
           >
-            <Text variant="bodySmall" style={{ color: '#64748B' }}>
+            <Text variant="bodySmall" style={{ color: theme.colors.subText || '#64748B' }}>
               Volume: {log.litresFilled ? `${log.litresFilled} L` : 'N/A'}
               {log.distanceCovered ? ` • Trip: ${log.distanceCovered} km` : ''}
               {log.notes ? ` • ${log.notes}` : ''}
@@ -448,12 +479,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   content: {
-    padding: 18,
+    padding: 16,
     paddingBottom: 40,
   },
   scanBtn: {
     backgroundColor: '#D97706',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   submitBtn: {
     marginTop: 10,
@@ -489,14 +520,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   historyTitle: {
-    marginTop: 20,
+    marginTop: 18,
     marginBottom: 8,
     fontWeight: '800',
-    color: '#0F172A',
     letterSpacing: -0.2,
   },
   emptyText: {
-    color: '#94A3B8',
     textAlign: 'center',
     marginVertical: 16,
     fontSize: 13,
