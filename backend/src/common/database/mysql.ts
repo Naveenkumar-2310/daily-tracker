@@ -118,6 +118,82 @@ async function createTables(p: Pool): Promise<void> {
       FOREIGN KEY (vehicleId) REFERENCES vehicles(id) ON DELETE CASCADE
     );
   `);
+
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS expense_categories (
+      id VARCHAR(64) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      type VARCHAR(20) NOT NULL DEFAULT 'EXPENSE',
+      icon VARCHAR(100) NOT NULL DEFAULT 'tag',
+      color VARCHAR(30) NOT NULL DEFAULT '#4F46E5',
+      isDefault BOOLEAN DEFAULT TRUE,
+      createdAt VARCHAR(50) NOT NULL
+    );
+  `);
+
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS expenses (
+      id VARCHAR(64) PRIMARY KEY,
+      type VARCHAR(20) NOT NULL DEFAULT 'EXPENSE',
+      amount DOUBLE NOT NULL,
+      categoryId VARCHAR(64) NOT NULL,
+      categoryName VARCHAR(255) NOT NULL,
+      date VARCHAR(20) NOT NULL,
+      paymentMode VARCHAR(30) NOT NULL DEFAULT 'UPI',
+      accountName VARCHAR(100),
+      notes TEXT,
+      receiptUrl TEXT,
+      vehicleId VARCHAR(64),
+      fuelLogId VARCHAR(64),
+      medicineId VARCHAR(64),
+      isRecurring BOOLEAN DEFAULT FALSE,
+      createdAt VARCHAR(50) NOT NULL,
+      updatedAt VARCHAR(50) NOT NULL,
+      INDEX idx_expense_date (date),
+      INDEX idx_expense_cat (categoryId)
+    );
+  `);
+
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS monthly_budgets (
+      id VARCHAR(64) PRIMARY KEY,
+      month INT NOT NULL,
+      year INT NOT NULL,
+      overallBudget DOUBLE NOT NULL DEFAULT 0,
+      categoryBudgetsJson TEXT,
+      createdAt VARCHAR(50) NOT NULL,
+      updatedAt VARCHAR(50) NOT NULL,
+      UNIQUE KEY uq_month_year (month, year)
+    );
+  `);
+
+  // Seed default categories if none exist
+  try {
+    const [rows]: any = await p.query('SELECT COUNT(*) as count FROM expense_categories');
+    if (rows[0]?.count === 0) {
+      const defaultCategories = [
+        ['cat-fuel', 'Fuel & Transport', 'EXPENSE', 'gas-station', '#D97706', true, new Date().toISOString()],
+        ['cat-med', 'Medicines & Health', 'EXPENSE', 'pill', '#0D9488', true, new Date().toISOString()],
+        ['cat-food', 'Food & Dining', 'EXPENSE', 'silverware-fork-knife', '#F97316', true, new Date().toISOString()],
+        ['cat-grocery', 'Groceries', 'EXPENSE', 'cart-outline', '#10B981', true, new Date().toISOString()],
+        ['cat-bills', 'Bills & Utilities', 'EXPENSE', 'lightning-bolt', '#3B82F6', true, new Date().toISOString()],
+        ['cat-shopping', 'Shopping', 'EXPENSE', 'shopping-outline', '#8B5CF6', true, new Date().toISOString()],
+        ['cat-entertainment', 'Entertainment', 'EXPENSE', 'movie-play-outline', '#EC4899', true, new Date().toISOString()],
+        ['cat-other-exp', 'Other Expenses', 'EXPENSE', 'dots-horizontal-circle', '#6B7280', true, new Date().toISOString()],
+        ['cat-salary', 'Salary', 'INCOME', 'briefcase-outline', '#059669', true, new Date().toISOString()],
+        ['cat-freelance', 'Freelance & Projects', 'INCOME', 'laptop', '#0284C7', true, new Date().toISOString()],
+        ['cat-other-inc', 'Other Income', 'INCOME', 'cash-plus', '#6366F1', true, new Date().toISOString()],
+      ];
+      for (const cat of defaultCategories) {
+        await p.query(
+          'INSERT INTO expense_categories (id, name, type, icon, color, isDefault, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          cat
+        );
+      }
+    }
+  } catch (seedErr) {
+    console.warn('Could not seed default expense categories:', seedErr);
+  }
 }
 
 export function getMysqlPool(): Pool | null {

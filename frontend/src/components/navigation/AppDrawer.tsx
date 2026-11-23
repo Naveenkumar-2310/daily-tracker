@@ -18,6 +18,7 @@ const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
 
 export type NavScreenKey =
   | "dashboard"
+  | "expenses"
   | "pills"
   | "calendar"
   | "petrol"
@@ -107,6 +108,16 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 style={[
                   styles.item,
                   activeScreen === "dashboard" && styles.activeItem,
+                ]}
+              />
+              <Drawer.Item
+                label="Expense & Finance"
+                icon="wallet-outline"
+                active={activeScreen === "expenses"}
+                onPress={() => handleSelect("expenses")}
+                style={[
+                  styles.item,
+                  activeScreen === "expenses" && styles.activeItem,
                 ]}
               />
               <Drawer.Item

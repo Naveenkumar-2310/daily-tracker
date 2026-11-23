@@ -8,12 +8,19 @@ import { MedicineController } from './modules/medicine-master/medicine.controlle
 import { PillLogController } from './modules/pill-log/pill-log.controller';
 import { VehicleController } from './modules/vehicle-master/vehicle.controller';
 import { FuelLogController } from './modules/fuel-log/fuel-log.controller';
+import { ExpenseController } from './modules/expense/expense.controller';
 import { OcrController } from './modules/ocr/ocr.controller';
 import { validateRequest } from './common/middleware/validation.middleware';
 import { CreateMedicineSchema, UpdateMedicineSchema } from './modules/medicine-master/medicine.validation';
 import { MarkPillSchema } from './modules/pill-log/pill-log.validation';
 import { CreateVehicleSchema, UpdateVehicleSchema } from './modules/vehicle-master/vehicle.validation';
 import { CreateFuelLogSchema } from './modules/fuel-log/fuel-log.validation';
+import {
+  CreateExpenseSchema,
+  UpdateExpenseSchema,
+  CreateExpenseCategorySchema,
+  SetMonthlyBudgetSchema,
+} from './modules/expense/expense.validation';
 import { errorHandler } from './common/middleware/error.middleware';
 
 const app = express();
@@ -28,6 +35,7 @@ const medicineController = new MedicineController();
 const pillLogController = new PillLogController();
 const vehicleController = new VehicleController();
 const fuelLogController = new FuelLogController();
+const expenseController = new ExpenseController();
 const ocrController = new OcrController();
 
 // Root endpoint
@@ -133,6 +141,20 @@ const ocrRouter = express.Router();
 ocrRouter.post('/analyze-text', ocrController.analyzeText);
 ocrRouter.post('/analyze-image', ocrController.analyzeImage);
 app.use('/api/v1/ocr', ocrRouter);
+
+// Expense Tracker Routes
+const expenseRouter = express.Router();
+expenseRouter.get('/summary', expenseController.getSummary);
+expenseRouter.get('/categories', expenseController.getCategories);
+expenseRouter.post('/categories', validateRequest(CreateExpenseCategorySchema), expenseController.createCategory);
+expenseRouter.get('/budget', expenseController.getBudget);
+expenseRouter.post('/budget', validateRequest(SetMonthlyBudgetSchema), expenseController.setBudget);
+expenseRouter.get('/', expenseController.getAll);
+expenseRouter.get('/:id', expenseController.getById);
+expenseRouter.post('/', validateRequest(CreateExpenseSchema), expenseController.create);
+expenseRouter.put('/:id', validateRequest(UpdateExpenseSchema), expenseController.update);
+expenseRouter.delete('/:id', expenseController.delete);
+app.use('/api/v1/expenses', expenseRouter);
 
 // Global Error Handler
 app.use(errorHandler);

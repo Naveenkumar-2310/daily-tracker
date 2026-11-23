@@ -13,6 +13,7 @@ import {
   RootNavigationProp,
 } from "./types";
 import { DashboardScreen } from "../features/dashboard/DashboardScreen";
+import { ExpenseHomeScreen } from "../features/expenses/ExpenseHomeScreen";
 import { PillHomeScreen } from "../features/pills/PillHomeScreen";
 import { PillCalendarScreen } from "../features/pills/PillCalendarScreen";
 import { PetrolEntryScreen } from "../features/petrol/PetrolEntryScreen";
@@ -42,6 +43,12 @@ const MainTabNavigator: React.FC<{
                 return {
                   title: "Daily Dashboard",
                   subtitle: "Health & Mobility Executive Overview",
+                };
+              case "Expenses":
+                return {
+                  title: "Expense & Finance",
+                  subtitle: "Smart Budgeting & Cash Flow",
+                  actions: [],
                 };
               case "Health":
                 return {
@@ -95,6 +102,8 @@ const MainTabNavigator: React.FC<{
           let iconName = "view-dashboard";
           if (route.name === "Home") {
             iconName = focused ? "view-dashboard" : "view-dashboard-outline";
+          } else if (route.name === "Expenses") {
+            iconName = focused ? "wallet" : "wallet-outline";
           } else if (route.name === "Health") {
             iconName = "pill";
           } else if (route.name === "Fuel") {
@@ -116,6 +125,11 @@ const MainTabNavigator: React.FC<{
         name="Home"
         component={DashboardScreen}
         options={{ tabBarLabel: "Dashboard" }}
+      />
+      <Tab.Screen
+        name="Expenses"
+        component={ExpenseHomeScreen}
+        options={{ tabBarLabel: "Expenses" }}
       />
       <Tab.Screen
         name="Health"
@@ -191,6 +205,9 @@ const DrawerController: React.FC<{ visible: boolean; onClose: () => void }> = ({
     switch (key) {
       case "dashboard":
         navigation.navigate("MainTabs", { screen: "Home" });
+        break;
+      case "expenses":
+        navigation.navigate("MainTabs", { screen: "Expenses" });
         break;
       case "pills":
         navigation.navigate("MainTabs", { screen: "Health" });

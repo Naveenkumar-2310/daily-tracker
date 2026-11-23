@@ -51,6 +51,42 @@ export interface DatabaseSchema {
     notes?: string;
     createdAt: string;
   }>;
+  expenseCategories: Array<{
+    id: string;
+    name: string;
+    type: 'EXPENSE' | 'INCOME';
+    icon: string;
+    color: string;
+    isDefault: boolean;
+    createdAt: string;
+  }>;
+  expenses: Array<{
+    id: string;
+    type: 'EXPENSE' | 'INCOME' | 'TRANSFER';
+    amount: number;
+    categoryId: string;
+    categoryName: string;
+    date: string;
+    paymentMode: 'CASH' | 'UPI' | 'BANK' | 'CARD';
+    accountName?: string;
+    notes?: string;
+    receiptUrl?: string;
+    vehicleId?: string;
+    fuelLogId?: string;
+    medicineId?: string;
+    isRecurring?: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  monthlyBudgets: Array<{
+    id: string;
+    month: number;
+    year: number;
+    overallBudget: number;
+    categoryBudgets: Record<string, number>;
+    createdAt: string;
+    updatedAt: string;
+  }>;
 }
 
 const DB_FILE = path.join(__dirname, '../../../data/db.json');
@@ -87,6 +123,21 @@ const INITIAL_DATA: DatabaseSchema = {
     },
   ],
   fuelLogs: [],
+  expenseCategories: [
+    { id: 'cat-fuel', name: 'Fuel & Transport', type: 'EXPENSE', icon: 'gas-station', color: '#D97706', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-med', name: 'Medicines & Health', type: 'EXPENSE', icon: 'pill', color: '#0D9488', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-food', name: 'Food & Dining', type: 'EXPENSE', icon: 'silverware-fork-knife', color: '#F97316', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-grocery', name: 'Groceries', type: 'EXPENSE', icon: 'cart-outline', color: '#10B981', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-bills', name: 'Bills & Utilities', type: 'EXPENSE', icon: 'lightning-bolt', color: '#3B82F6', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-shopping', name: 'Shopping', type: 'EXPENSE', icon: 'shopping-outline', color: '#8B5CF6', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-entertainment', name: 'Entertainment', type: 'EXPENSE', icon: 'movie-play-outline', color: '#EC4899', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-other-exp', name: 'Other Expenses', type: 'EXPENSE', icon: 'dots-horizontal-circle', color: '#6B7280', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-salary', name: 'Salary', type: 'INCOME', icon: 'briefcase-outline', color: '#059669', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-freelance', name: 'Freelance & Projects', type: 'INCOME', icon: 'laptop', color: '#0284C7', isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'cat-other-inc', name: 'Other Income', type: 'INCOME', icon: 'cash-plus', color: '#6366F1', isDefault: true, createdAt: new Date().toISOString() },
+  ],
+  expenses: [],
+  monthlyBudgets: [],
 };
 
 export class JsonDatabase {
@@ -115,7 +166,17 @@ export class JsonDatabase {
         return INITIAL_DATA;
       }
       const raw = fs.readFileSync(DB_FILE, 'utf-8');
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (!parsed.expenseCategories || parsed.expenseCategories.length === 0) {
+        parsed.expenseCategories = INITIAL_DATA.expenseCategories;
+      }
+      if (!parsed.expenses) {
+        parsed.expenses = [];
+      }
+      if (!parsed.monthlyBudgets) {
+        parsed.monthlyBudgets = [];
+      }
+      return parsed;
     } catch (err) {
       console.error('Error loading database file, using initial data:', err);
       return INITIAL_DATA;

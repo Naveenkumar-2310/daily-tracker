@@ -29,5 +29,120 @@
       "updatedAt": "2026-11-17T12:25:31.294Z"
     }
   ],
-  "fuelLogs": []
+  "fuelLogs": [],
+  "expenseCategories": [
+    {
+      "id": "cat-fuel",
+      "name": "Fuel & Transport",
+      "type": "EXPENSE",
+      "icon": "gas-station",
+      "color": "#D97706",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-med",
+      "name": "Medicines & Health",
+      "type": "EXPENSE",
+      "icon": "pill",
+      "color": "#0D9488",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-food",
+      "name": "Food & Dining",
+      "type": "EXPENSE",
+      "icon": "silverware-fork-knife",
+      "color": "#F97316",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-grocery",
+      "name": "Groceries",
+      "type": "EXPENSE",
+      "icon": "cart-outline",
+      "color": "#10B981",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-bills",
+      "name": "Bills & Utilities",
+      "type": "EXPENSE",
+      "icon": "lightning-bolt",
+      "color": "#3B82F6",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-shopping",
+      "name": "Shopping",
+      "type": "EXPENSE",
+      "icon": "shopping-outline",
+      "color": "#8B5CF6",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-entertainment",
+      "name": "Entertainment",
+      "type": "EXPENSE",
+      "icon": "movie-play-outline",
+      "color": "#EC4899",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-other-exp",
+      "name": "Other Expenses",
+      "type": "EXPENSE",
+      "icon": "dots-horizontal-circle",
+      "color": "#6B7280",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-salary",
+      "name": "Salary",
+      "type": "INCOME",
+      "icon": "briefcase-outline",
+      "color": "#059669",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-freelance",
+      "name": "Freelance & Projects",
+      "type": "INCOME",
+      "icon": "laptop",
+      "color": "#0284C7",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    },
+    {
+      "id": "cat-other-inc",
+      "name": "Other Income",
+      "type": "INCOME",
+      "icon": "cash-plus",
+      "color": "#6366F1",
+      "isDefault": true,
+      "createdAt": "2026-11-23T10:11:27.659Z"
+    }
+  ],
+  "expenses": [],
+  "monthlyBudgets": [
+    {
+      "id": "bgt-bb594d4b-6362-4c74-a947-a38cd3ef0821",
+      "month": 11,
+      "year": 2026,
+      "overallBudget": 25000,
+      "categoryBudgets": {
+        "cat-fuel": 4000
+      },
+      "createdAt": "2026-11-23T10:11:28.130Z",
+      "updatedAt": "2026-11-23T10:11:28.130Z"
+    }
+  ]
 }

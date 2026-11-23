@@ -236,6 +236,54 @@ export const DashboardScreen: React.FC = () => {
             styles.quickCard,
             {
               backgroundColor: theme.isDark
+                ? "rgba(16, 185, 129, 0.2)"
+                : theme.isHighContrast
+                  ? "#FFFFFF"
+                  : "#DCFCE7",
+              borderColor: theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "rgba(16, 185, 129, 0.4)"
+                  : "transparent",
+              borderWidth: theme.isHighContrast ? 2 : theme.isDark ? 1 : 0,
+            },
+          ]}
+          onPress={() => navigation.navigate("Expenses")}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons
+            name="wallet"
+            size={24}
+            color={
+              theme.isHighContrast
+                ? "#000000"
+                : theme.isDark
+                  ? "#6EE7B7"
+                  : "#059669"
+            }
+          />
+          <Text
+            style={[
+              styles.quickCardLabel,
+              {
+                color: theme.isHighContrast
+                  ? "#000000"
+                  : theme.isDark
+                    ? "#6EE7B7"
+                    : "#059669",
+              },
+            ]}
+            numberOfLines={1}
+          >
+            Expenses
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.quickCard,
+            {
+              backgroundColor: theme.isDark
                 ? "rgba(79, 70, 229, 0.2)"
                 : theme.isHighContrast
                   ? "#FFFFFF"

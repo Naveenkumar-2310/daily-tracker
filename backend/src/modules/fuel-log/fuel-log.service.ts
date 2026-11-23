@@ -1,11 +1,13 @@
 import { FuelLogRepository } from './fuel-log.repository';
 import { VehicleRepository } from '../vehicle-master/vehicle.repository';
+import { ExpenseService } from '../expense/expense.service';
 import { ICreateFuelLogDTO, IFuelLog, IFuelAnalyticsSummary } from './fuel-log.interface';
 
 export class FuelLogService {
   constructor(
     private fuelLogRepo: FuelLogRepository = new FuelLogRepository(),
-    private vehicleRepo: VehicleRepository = new VehicleRepository()
+    private vehicleRepo: VehicleRepository = new VehicleRepository(),
+    private expenseService: ExpenseService = new ExpenseService()
   ) {}
 
   public async createFuelLog(dto: ICreateFuelLogDTO): Promise<{
@@ -93,6 +95,20 @@ export class FuelLogService {
       notes: dto.notes,
     });
 
+    // Auto-sync into Expense Tracker as a Fuel & Transport expense
+    try {
+      await this.expenseService.syncFuelLog({
+        id: created.id,
+        vehicleId: created.vehicleId,
+        vehicleName: created.vehicleName,
+        date: created.date,
+        petrolAmount: created.petrolAmount,
+        notes: created.notes,
+      });
+    } catch (syncErr) {
+      console.warn('Could not auto-sync fuel log to expenses:', syncErr);
+    }
+
     return { log: created, mileageAnalysis };
   }
 
@@ -133,6 +149,9 @@ export class FuelLogService {
   }
 
   public async delete(id: string): Promise<boolean> {
+    try {
+      await this.expenseService.deleteFuelLogExpense(id);
+    } catch {}
     return this.fuelLogRepo.delete(id);
   }
 }

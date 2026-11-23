@@ -4,6 +4,7 @@ import type { CompositeNavigationProp, NavigatorScreenParams } from '@react-navi
 
 export type MainTabParamList = {
   Home: undefined;
+  Expenses: undefined;
   Health: undefined;
   Fuel: { vehicleId?: string } | undefined;
   Directory: { initialTab?: 'medicines' | 'vehicles' } | undefined;
