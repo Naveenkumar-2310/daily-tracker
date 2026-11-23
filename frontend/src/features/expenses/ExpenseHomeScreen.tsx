@@ -387,13 +387,13 @@ export const ExpenseHomeScreen: React.FC = () => {
               />
 
               {/* Category Spending Breakdown */}
-              {summary && summary.categoryBreakdown.length > 0 && (
+              {Boolean(summary && summary.categoryBreakdown && summary.categoryBreakdown.length > 0) ? (
                 <View style={styles.categoriesSection}>
                   <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
                     Top Spending by Category
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-                    {summary.categoryBreakdown.map((cat) => (
+                    {summary!.categoryBreakdown.map((cat) => (
                       <View
                         key={cat.categoryId}
                         style={[
@@ -422,7 +422,7 @@ export const ExpenseHomeScreen: React.FC = () => {
                     ))}
                   </ScrollView>
                 </View>
-              )}
+              ) : null}
 
               {/* Search & Ledger Controls Bar */}
               <View style={styles.searchBarWrapper}>
@@ -706,9 +706,9 @@ export const ExpenseHomeScreen: React.FC = () => {
                       </Text>
                     </View>
 
-                    {isSelected && (
+                    {isSelected ? (
                       <MaterialCommunityIcons name="check" size={18} color={theme.colors.primary} />
-                    )}
+                    ) : null}
                   </TouchableOpacity>
                 );
               })}

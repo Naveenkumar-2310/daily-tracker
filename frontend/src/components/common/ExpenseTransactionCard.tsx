@@ -70,18 +70,18 @@ export const ExpenseTransactionCard: React.FC<ExpenseTransactionCardProps> = ({
             <Text variant="titleSmall" style={[styles.categoryTitle, { color: theme.colors.onSurface }]}>
               {item.categoryName}
             </Text>
-            {item.vehicleId && (
+            {Boolean(item.vehicleId) ? (
               <View style={[styles.tagBadge, { backgroundColor: '#FEF3C7' }]}>
                 <MaterialCommunityIcons name="gas-station" size={11} color="#B45309" />
                 <Text style={styles.tagText}>Fuel Sync</Text>
               </View>
-            )}
-            {item.isRecurring && (
+            ) : null}
+            {Boolean(item.isRecurring) ? (
               <View style={[styles.tagBadge, { backgroundColor: '#EDE9FE' }]}>
                 <MaterialCommunityIcons name="repeat" size={11} color="#6D28D9" />
                 <Text style={[styles.tagText, { color: '#6D28D9' }]}>Recurring</Text>
               </View>
-            )}
+            ) : null}
           </View>
 
           <View style={styles.metaRow}>
@@ -95,7 +95,7 @@ export const ExpenseTransactionCard: React.FC<ExpenseTransactionCardProps> = ({
                 {item.paymentMode}
               </Text>
             </View>
-            {item.notes ? (
+            {Boolean(item.notes) ? (
               <>
                 <Text variant="bodySmall" style={{ color: theme.colors.subText }}>•</Text>
                 <Text
@@ -122,7 +122,7 @@ export const ExpenseTransactionCard: React.FC<ExpenseTransactionCardProps> = ({
           {isIncome ? '+' : '-'}₹{item.amount.toLocaleString('en-IN')}
         </Text>
 
-        {onDelete && (
+        {Boolean(onDelete) ? (
           <TouchableOpacity
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={onDelete}
@@ -130,7 +130,7 @@ export const ExpenseTransactionCard: React.FC<ExpenseTransactionCardProps> = ({
           >
             <MaterialCommunityIcons name="trash-can-outline" size={16} color="#94A3B8" />
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
     </TouchableOpacity>
   );

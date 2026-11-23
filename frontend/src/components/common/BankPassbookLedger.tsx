@@ -149,12 +149,12 @@ export const BankPassbookLedger: React.FC<BankPassbookLedgerProps> = ({
                           <Text style={[styles.modeBadge, { color: theme.colors.subText }]}>
                             {tx.paymentMode}
                           </Text>
-                          {tx.vehicleId && (
+                          {Boolean(tx.vehicleId) ? (
                             <>
                               <Text style={styles.dotSeparator}>•</Text>
                               <Text style={styles.fuelSyncBadge}>Fuel ⛽</Text>
                             </>
-                          )}
+                          ) : null}
                         </View>
                       </View>
                     </View>
@@ -188,13 +188,13 @@ export const BankPassbookLedger: React.FC<BankPassbookLedgerProps> = ({
                         </View>
                       </View>
 
-                      {tx.runningBalance !== undefined && (
+                      {tx.runningBalance !== undefined ? (
                         <Text style={[styles.balanceText, { color: theme.colors.subText }]}>
                           Bal: ₹{tx.runningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </Text>
-                      )}
+                      ) : null}
 
-                      {onDeleteItem && (
+                      {onDeleteItem ? (
                         <TouchableOpacity
                           onPress={() => onDeleteItem(tx.id)}
                           style={styles.deleteAction}
@@ -202,7 +202,7 @@ export const BankPassbookLedger: React.FC<BankPassbookLedgerProps> = ({
                         >
                           <MaterialCommunityIcons name="trash-can-outline" size={14} color="#94A3B8" />
                         </TouchableOpacity>
-                      )}
+                      ) : null}
                     </View>
                   </View>
                 );
@@ -344,3 +344,4 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
+

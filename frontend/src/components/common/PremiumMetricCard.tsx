@@ -54,7 +54,7 @@ export const PremiumMetricCard: React.FC<PremiumMetricCardProps> = ({
           <MaterialCommunityIcons name={icon} size={22} color={accentColor} />
         </View>
 
-        {trendText && (
+        {Boolean(trendText) ? (
           <View
             style={[
               styles.trendBadge,
@@ -77,7 +77,7 @@ export const PremiumMetricCard: React.FC<PremiumMetricCardProps> = ({
               {trendText}
             </Text>
           </View>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.body}>
@@ -91,11 +91,11 @@ export const PremiumMetricCard: React.FC<PremiumMetricCardProps> = ({
         >
           {formattedAmount}
         </Text>
-        {subtitle && (
+        {Boolean(subtitle) ? (
           <Text variant="bodySmall" style={[styles.subtitle, { color: theme.colors.subText || '#94A3B8' }]}>
             {subtitle}
           </Text>
-        )}
+        ) : null}
       </View>
 
       {/* Decorative accent bottom line */}
