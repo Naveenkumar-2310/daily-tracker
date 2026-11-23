@@ -8,7 +8,7 @@ export interface PremiumMetricCardProps {
   title: string;
   amount: string | number;
   subtitle?: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: any;
   accentColor: string;
   trendText?: string;
   trendPositive?: boolean;
@@ -31,8 +31,8 @@ export const PremiumMetricCard: React.FC<PremiumMetricCardProps> = ({
 
   const formattedAmount =
     typeof amount === 'number'
-      ? `₹${amount.toLocaleString('en-IN')}`
-      : amount;
+      ? isNaN(amount) ? '₹0' : `₹${amount.toLocaleString('en-IN')}`
+      : amount || '₹0';
 
   return (
     <TouchableOpacity
@@ -88,7 +88,6 @@ export const PremiumMetricCard: React.FC<PremiumMetricCardProps> = ({
           variant="headlineSmall"
           style={[styles.amount, { color: theme.colors.onSurface }]}
           numberOfLines={1}
-          adjustsFontSizeToFit
         >
           {formattedAmount}
         </Text>

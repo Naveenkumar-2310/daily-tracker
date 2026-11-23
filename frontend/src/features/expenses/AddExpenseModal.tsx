@@ -104,7 +104,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Type Switcher */}
             <View style={styles.typeSwitcher}>
               <TouchableOpacity
@@ -321,27 +326,32 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
+    alignItems: Platform.OS === 'web' ? 'center' : undefined,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
   },
   sheet: {
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 500 : undefined,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-    maxHeight: '90%',
+    borderRadius: Platform.OS === 'web' ? 24 : undefined,
+    paddingTop: 18,
+    paddingHorizontal: 18,
+    paddingBottom: Platform.OS === 'web' ? 18 : 16,
+    maxHeight: Platform.OS === 'web' ? '90%' : '88%',
     borderWidth: 1,
-    borderBottomWidth: 0,
+    borderBottomWidth: Platform.OS === 'web' ? 1 : 0,
+    elevation: 8,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   title: {
     fontWeight: '800',
@@ -352,7 +362,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(100, 116, 139, 0.12)',
   },
   scroll: {
-    maxHeight: 520,
+    flexGrow: 0,
+  },
+  scrollContent: {
+    paddingBottom: 4,
   },
   typeSwitcher: {
     flexDirection: 'row',
@@ -449,11 +462,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   notesInput: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   submitButton: {
     borderRadius: 14,
-    marginVertical: 8,
+    marginTop: 6,
+    marginBottom: 2,
   },
   submitButtonContent: {
     paddingVertical: 6,

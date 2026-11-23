@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,8 +7,9 @@ import {
   RefreshControl,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
-import { Text, useTheme, ActivityIndicator } from 'react-native-paper';
+import { Text, TextInput, useTheme, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ExtendedTheme } from '../../theme/theme';
 import { ResponsiveContainer } from '../../components/common/ResponsiveContainer';
@@ -19,6 +20,10 @@ import {
   ExpenseItemData,
 } from '../../components/common/ExpenseTransactionCard';
 import {
+  BankPassbookLedger,
+  BankLedgerItem,
+} from '../../components/common/BankPassbookLedger';
+import {
   expenseApi,
   IExpenseCategory,
   IExpenseItem,
@@ -26,6 +31,18 @@ import {
 } from '../../services/expenseApi';
 import { AddExpenseModal } from './AddExpenseModal';
 import { SetBudgetModal } from './SetBudgetModal';
+
+export type SortKey =
+  | 'DATE_DESC'
+  | 'DATE_ASC'
+  | 'AMOUNT_DESC'
+  | 'AMOUNT_ASC'
+  | 'CATEGORY_ASC'
+  | 'CATEGORY_DESC'
+  | 'TYPE_EXPENSE'
+  | 'TYPE_INCOME';
+
+export type ViewMode = 'BANK' | 'CARD';
 
 export const ExpenseHomeScreen: React.FC = () => {
   const theme = useTheme<ExtendedTheme>();
@@ -41,15 +58,32 @@ export const ExpenseHomeScreen: React.FC = () => {
   const [summary, setSummary] = useState<IExpenseSummary | null>(null);
   const [expenses, setExpenses] = useState<IExpenseItem[]>([]);
   const [categories, setCategories] = useState<IExpenseCategory[]>([]);
+
+  // Filtering & Sorting
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'EXPENSE' | 'INCOME' | 'FUEL'>('ALL');
+  const [sortBy, setSortBy] = useState<SortKey>('DATE_DESC');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('BANK');
 
   // Modals
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const sortOptions: Array<{ key: SortKey; label: string; icon: string }> = [
+    { key: 'DATE_DESC', label: 'Date: Newest First', icon: 'calendar-arrow-right' },
+    { key: 'DATE_ASC', label: 'Date: Oldest First', icon: 'calendar-arrow-left' },
+    { key: 'AMOUNT_DESC', label: 'Amount: Highest First', icon: 'sort-numeric-descending' },
+    { key: 'AMOUNT_ASC', label: 'Amount: Lowest First', icon: 'sort-numeric-ascending' },
+    { key: 'CATEGORY_ASC', label: 'Category: A to Z', icon: 'sort-alphabetical-ascending' },
+    { key: 'CATEGORY_DESC', label: 'Category: Z to A', icon: 'sort-alphabetical-descending' },
+    { key: 'TYPE_EXPENSE', label: 'Expenses (Debits) First', icon: 'arrow-top-right' },
+    { key: 'TYPE_INCOME', label: 'Income (Credits) First', icon: 'arrow-bottom-left' },
   ];
 
   const loadData = useCallback(async () => {
@@ -164,30 +198,96 @@ export const ExpenseHomeScreen: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `Expenses_${monthNames[selectedMonth - 1]}_${selectedYear}.csv`);
+      link.setAttribute('download', `BankStatement_${monthNames[selectedMonth - 1]}_${selectedYear}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } else {
       Alert.alert(
-        'CSV Export Ready',
+        'Passbook Statement Export Ready',
         `Generated CSV with ${expenses.length} records for ${monthNames[selectedMonth - 1]} ${selectedYear}.`
       );
     }
   };
 
-  // Filter items
-  const filteredExpenses = expenses.filter((e) => {
-    if (activeFilter === 'EXPENSE') return e.type === 'EXPENSE';
-    if (activeFilter === 'INCOME') return e.type === 'INCOME';
-    if (activeFilter === 'FUEL') return !!e.vehicleId || !!e.fuelLogId;
-    return true;
-  });
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, IExpenseCategory>();
+    for (const c of categories) {
+      map.set(c.id, c);
+    }
+    return map;
+  }, [categories]);
 
-  const categoryMap = new Map<string, IExpenseCategory>();
-  for (const c of categories) {
-    categoryMap.set(c.id, c);
-  }
+  // Compute running balance & apply filters & sorting
+  const processedTransactions = useMemo(() => {
+    // 1. Calculate running balances in chronological order
+    const chrono = [...expenses].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    let currentBalance = 0;
+    const balanceMap = new Map<string, number>();
+
+    for (const tx of chrono) {
+      if (tx.type === 'INCOME') {
+        currentBalance += tx.amount;
+      } else if (tx.type === 'EXPENSE') {
+        currentBalance -= tx.amount;
+      }
+      balanceMap.set(tx.id, currentBalance);
+    }
+
+    // 2. Filter
+    let list = expenses.map((tx) => ({
+      ...tx,
+      runningBalance: balanceMap.get(tx.id) ?? 0,
+    }));
+
+    if (activeFilter === 'EXPENSE') {
+      list = list.filter((e) => e.type === 'EXPENSE');
+    } else if (activeFilter === 'INCOME') {
+      list = list.filter((e) => e.type === 'INCOME');
+    } else if (activeFilter === 'FUEL') {
+      list = list.filter((e) => !!e.vehicleId || !!e.fuelLogId);
+    }
+
+    // 3. Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (e) =>
+          e.categoryName.toLowerCase().includes(q) ||
+          e.notes?.toLowerCase().includes(q) ||
+          e.paymentMode.toLowerCase().includes(q) ||
+          String(e.amount).includes(q)
+      );
+    }
+
+    // 4. Sort
+    list.sort((a, b) => {
+      switch (sortBy) {
+        case 'DATE_ASC':
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case 'DATE_DESC':
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case 'AMOUNT_DESC':
+          return b.amount - a.amount;
+        case 'AMOUNT_ASC':
+          return a.amount - b.amount;
+        case 'CATEGORY_ASC':
+          return a.categoryName.localeCompare(b.categoryName);
+        case 'CATEGORY_DESC':
+          return b.categoryName.localeCompare(a.categoryName);
+        case 'TYPE_EXPENSE':
+          return a.type === 'EXPENSE' ? -1 : 1;
+        case 'TYPE_INCOME':
+          return a.type === 'INCOME' ? -1 : 1;
+        default:
+          return 0;
+      }
+    });
+
+    return list;
+  }, [expenses, activeFilter, searchQuery, sortBy]);
+
+  const activeSortLabel = sortOptions.find((s) => s.key === sortBy)?.label || 'Date: Newest';
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -324,13 +424,97 @@ export const ExpenseHomeScreen: React.FC = () => {
                 </View>
               )}
 
-              {/* Action Bar (Filters + Export) */}
+              {/* Search & Ledger Controls Bar */}
+              <View style={styles.searchBarWrapper}>
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search description, category, mode..."
+                  mode="outlined"
+                  left={<TextInput.Icon icon="magnify" color={theme.colors.subText} />}
+                  right={searchQuery ? <TextInput.Icon icon="close-circle" onPress={() => setSearchQuery('')} /> : undefined}
+                  style={styles.searchInput}
+                  outlineColor={theme.colors.outline}
+                  activeOutlineColor={theme.colors.primary}
+                  dense
+                />
+              </View>
+
+              {/* View Switcher & Sort Toolbar */}
+              <View style={styles.toolbarRow}>
+                {/* View Switcher: Bank Passbook vs Cards */}
+                <View style={[styles.viewSwitcher, { backgroundColor: theme.colors.surfaceVariant || '#F1F5F9' }]}>
+                  <TouchableOpacity
+                    onPress={() => setViewMode('BANK')}
+                    style={[
+                      styles.viewTab,
+                      viewMode === 'BANK' && [styles.viewTabActive, { backgroundColor: theme.colors.surface }],
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name="book-open-page-variant-outline"
+                      size={15}
+                      color={viewMode === 'BANK' ? theme.colors.primary : theme.colors.subText}
+                    />
+                    <Text
+                      style={[
+                        styles.viewTabText,
+                        { color: viewMode === 'BANK' ? theme.colors.primary : theme.colors.subText },
+                      ]}
+                    >
+                      Bank Passbook
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setViewMode('CARD')}
+                    style={[
+                      styles.viewTab,
+                      viewMode === 'CARD' && [styles.viewTabActive, { backgroundColor: theme.colors.surface }],
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name="view-list"
+                      size={16}
+                      color={viewMode === 'CARD' ? theme.colors.primary : theme.colors.subText}
+                    />
+                    <Text
+                      style={[
+                        styles.viewTabText,
+                        { color: viewMode === 'CARD' ? theme.colors.primary : theme.colors.subText },
+                      ]}
+                    >
+                      Cards
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Sort Button */}
+                <TouchableOpacity
+                  onPress={() => setSortModalVisible(true)}
+                  style={[
+                    styles.sortPillBtn,
+                    {
+                      backgroundColor: theme.colors.cardBg || theme.colors.surface,
+                      borderColor: theme.colors.cardBorder || theme.colors.outline,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons name="sort" size={16} color={theme.colors.primary} />
+                  <Text style={[styles.sortPillText, { color: theme.colors.onSurface }]} numberOfLines={1}>
+                    {activeSortLabel}
+                  </Text>
+                  <MaterialCommunityIcons name="chevron-down" size={16} color={theme.colors.subText} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Filter Pills Bar */}
               <View style={styles.filterBar}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
                   {[
                     { id: 'ALL', label: 'All Records' },
-                    { id: 'EXPENSE', label: 'Expenses' },
-                    { id: 'INCOME', label: 'Income' },
+                    { id: 'EXPENSE', label: 'Debits (Expenses)' },
+                    { id: 'INCOME', label: 'Credits (Income)' },
                     { id: 'FUEL', label: 'Fuel Synced ⛽' },
                   ].map((f) => (
                     <TouchableOpacity
@@ -360,24 +544,24 @@ export const ExpenseHomeScreen: React.FC = () => {
 
                 <TouchableOpacity onPress={handleExportCSV} style={styles.exportBtn}>
                   <MaterialCommunityIcons name="file-excel-outline" size={18} color="#059669" />
-                  <Text style={styles.exportBtnText}>Export</Text>
+                  <Text style={styles.exportBtnText}>Statement</Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Transaction List */}
+              {/* Transactions Content */}
               <View style={styles.transactionsHeader}>
                 <Text variant="titleMedium" style={{ fontWeight: '800', color: theme.colors.onSurface }}>
-                  Transactions ({filteredExpenses.length})
+                  {viewMode === 'BANK' ? 'Bank Account Passbook' : 'Transaction Records'} ({processedTransactions.length})
                 </Text>
                 <TouchableOpacity onPress={() => setAddModalVisible(true)} style={styles.quickAddHeaderBtn}>
                   <MaterialCommunityIcons name="plus-circle" size={16} color={theme.colors.primary} />
                   <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.primary }}>
-                    Add New
+                    Add Record
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {filteredExpenses.length === 0 ? (
+              {processedTransactions.length === 0 ? (
                 <View
                   style={[
                     styles.emptyState,
@@ -387,12 +571,12 @@ export const ExpenseHomeScreen: React.FC = () => {
                     },
                   ]}
                 >
-                  <MaterialCommunityIcons name="wallet-outline" size={48} color={theme.colors.subText} />
+                  <MaterialCommunityIcons name="book-open-outline" size={48} color={theme.colors.subText} />
                   <Text variant="titleMedium" style={{ fontWeight: '700', color: theme.colors.onSurface, marginTop: 12 }}>
-                    No Transactions Recorded
+                    No Entries Found
                   </Text>
                   <Text variant="bodySmall" style={{ color: theme.colors.subText, textAlign: 'center', marginHorizontal: 20 }}>
-                    Log your daily spending, income, or refueling to keep your financial track crystal clear.
+                    {searchQuery ? 'No transactions match your search filter.' : 'Log your daily spending, salary, or refueling to populate your statement.'}
                   </Text>
                   <TouchableOpacity
                     onPress={() => setAddModalVisible(true)}
@@ -402,8 +586,16 @@ export const ExpenseHomeScreen: React.FC = () => {
                     <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Record First Transaction</Text>
                   </TouchableOpacity>
                 </View>
+              ) : viewMode === 'BANK' ? (
+                /* Bank Passbook Ledger View */
+                <BankPassbookLedger
+                  items={processedTransactions as BankLedgerItem[]}
+                  categoryMap={categoryMap}
+                  onDeleteItem={handleDeleteExpense}
+                />
               ) : (
-                filteredExpenses.map((item) => {
+                /* Standard Card View */
+                processedTransactions.map((item) => {
                   const cat = categoryMap.get(item.categoryId);
                   return (
                     <ExpenseTransactionCard
@@ -430,7 +622,7 @@ export const ExpenseHomeScreen: React.FC = () => {
         <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* Modals */}
+      {/* Add Transaction Modal */}
       <AddExpenseModal
         visible={addModalVisible}
         onDismiss={() => setAddModalVisible(false)}
@@ -438,6 +630,7 @@ export const ExpenseHomeScreen: React.FC = () => {
         onSave={handleSaveTransaction}
       />
 
+      {/* Set Budget Modal */}
       <SetBudgetModal
         visible={budgetModalVisible}
         onDismiss={() => setBudgetModalVisible(false)}
@@ -446,6 +639,83 @@ export const ExpenseHomeScreen: React.FC = () => {
         year={selectedYear}
         onSave={handleSaveBudget}
       />
+
+      {/* Sort Selection Modal */}
+      <Modal
+        visible={sortModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setSortModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSortModalVisible(false)}
+        >
+          <View
+            style={[
+              styles.sortModalCard,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.cardBorder || theme.colors.outline,
+              },
+            ]}
+          >
+            <View style={styles.sortModalHeader}>
+              <Text variant="titleMedium" style={{ fontWeight: '800', color: theme.colors.onSurface }}>
+                Sort Transactions By
+              </Text>
+              <TouchableOpacity onPress={() => setSortModalVisible(false)}>
+                <MaterialCommunityIcons name="close" size={20} color={theme.colors.subText} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.sortList}>
+              {sortOptions.map((opt) => {
+                const isSelected = opt.key === sortBy;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    onPress={() => {
+                      setSortBy(opt.key);
+                      setSortModalVisible(false);
+                    }}
+                    style={[
+                      styles.sortOptionItem,
+                      isSelected && {
+                        backgroundColor: `${theme.colors.primary}12`,
+                      },
+                    ]}
+                  >
+                    <View style={styles.sortItemLeft}>
+                      <MaterialCommunityIcons
+                        name={opt.icon as any}
+                        size={20}
+                        color={isSelected ? theme.colors.primary : theme.colors.subText}
+                      />
+                      <Text
+                        style={[
+                          styles.sortItemLabel,
+                          {
+                            color: isSelected ? theme.colors.primary : theme.colors.onSurface,
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </View>
+
+                    {isSelected && (
+                      <MaterialCommunityIcons name="check" size={18} color={theme.colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -534,11 +804,65 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 2,
   },
+  searchBarWrapper: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  searchInput: {
+    backgroundColor: 'transparent',
+    fontSize: 13,
+  },
+  toolbarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 8,
+    gap: 8,
+  },
+  viewSwitcher: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 3,
+  },
+  viewTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  viewTabActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  viewTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  sortPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  sortPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    flex: 1,
+  },
   filterBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
     marginBottom: 12,
     gap: 8,
   },
@@ -612,5 +936,46 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    padding: 20,
+  },
+  sortModalCard: {
+    width: '100%',
+    maxWidth: 380,
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+  },
+  sortModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(100, 116, 139, 0.15)',
+  },
+  sortList: {
+    gap: 4,
+  },
+  sortOptionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  sortItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sortItemLabel: {
+    fontSize: 13,
+  },
 });
-
