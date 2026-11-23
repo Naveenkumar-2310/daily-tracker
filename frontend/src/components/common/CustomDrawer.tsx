@@ -31,7 +31,7 @@ export function CustomDrawerContent(props?: CustomDrawerProps) {
         </View>
       </View>
       <View style={styles.badgeRow}>
-        <Text style={styles.caption}>Health & Mobility Management</Text>
+        <Text style={styles.caption}>Health, Wealth & Mobility in Flow</Text>
       </View>
     </View>
   );

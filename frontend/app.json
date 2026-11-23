@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Daily Tracker",
+    "name": "Daily Flow",
     "slug": "daily-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -42,7 +42,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Daily Tracker to access your camera to scan odometer readings."
+          "cameraPermission": "Allow Daily Flow to access your camera to scan odometer readings."
         }
       ],
       "expo-notifications",

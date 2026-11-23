@@ -42,7 +42,7 @@ const ocrController = new OcrController();
 app.get('/', (_req, res) => {
   res.json({
     status: 'ok',
-    service: 'Daily Tracker Backend API',
+    service: 'Daily Flow Backend API',
     documentation: '/api-docs',
     swagger: '/swagger',
     health: '/health',

@@ -22,7 +22,8 @@ export type NavScreenKey =
   | "pills"
   | "calendar"
   | "petrol"
-  | "directory";
+  | "directory"
+  | "welcome";
 
 interface AppDrawerProps {
   visible: boolean;
@@ -152,7 +153,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
               />
             </Drawer.Section>
 
-            <Drawer.Section title="CONFIGURATION" style={styles.section}>
+            <Drawer.Section title="CONFIGURATION & TOUR" style={styles.section}>
               <Drawer.Item
                 label="Asset Directory"
                 icon="folder-cog-outline"
@@ -161,6 +162,16 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 style={[
                   styles.item,
                   activeScreen === "directory" && styles.activeItem,
+                ]}
+              />
+              <Drawer.Item
+                label="Welcome & App Tour"
+                icon="sparkles"
+                active={activeScreen === "welcome"}
+                onPress={() => handleSelect("welcome")}
+                style={[
+                  styles.item,
+                  activeScreen === "welcome" && styles.activeItem,
                 ]}
               />
             </Drawer.Section>
@@ -205,7 +216,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
             <Divider style={styles.footerDivider} />
             <View style={styles.footerRow}>
               <Text variant="labelSmall" style={styles.footerSub}>
-                Daily Tracker • v1.0.0
+                Daily Flow • v1.0.0
               </Text>
             </View>
           </View>

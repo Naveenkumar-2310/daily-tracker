@@ -138,7 +138,7 @@ export const CameraOcrModal: React.FC<CameraOcrModalProps> = ({
               Camera Access Required
             </Text>
             <Text variant="bodyMedium" style={styles.permDesc}>
-              Daily Tracker requires camera permission to capture your speedometer & odometer kilometers automatically.
+              Daily Flow requires camera permission to capture your speedometer & odometer kilometers automatically.
             </Text>
 
             <AppButton

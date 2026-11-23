@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
-import { Text, useTheme } from "react-native-paper";
+import { Text, useTheme, ActivityIndicator } from "react-native-paper";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ExtendedTheme } from "../theme/theme";
 
 import {
@@ -18,6 +19,7 @@ import { PillHomeScreen } from "../features/pills/PillHomeScreen";
 import { PillCalendarScreen } from "../features/pills/PillCalendarScreen";
 import { PetrolEntryScreen } from "../features/petrol/PetrolEntryScreen";
 import { ManageMastersScreen } from "../features/masters/ManageMastersScreen";
+import { WelcomeScreen, ONBOARDING_STORAGE_KEY } from "../features/welcome/WelcomeScreen";
 import { AppHeader } from "../components/common/AppHeader";
 import { AppDrawer, NavScreenKey } from "../components/navigation/AppDrawer";
 
@@ -153,15 +155,53 @@ const MainTabNavigator: React.FC<{
 // Root Stack Navigator
 export const RootNavigator: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const completed = await AsyncStorage.getItem(ONBOARDING_STORAGE_KEY);
+        setHasCompletedOnboarding(completed === "true");
+      } catch (e) {
+        setHasCompletedOnboarding(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkOnboarding();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: "#0F172A",
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#38BDF8" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Stack.Navigator
-        initialRouteName="MainTabs"
+        initialRouteName={hasCompletedOnboarding ? "MainTabs" : "Welcome"}
         screenOptions={{
           animation: "slide_from_right",
         }}
       >
+        <Stack.Screen
+          name="Welcome"
+          component={WelcomeScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="MainTabs" options={{ headerShown: false }}>
           {() => (
             <MainTabNavigator
@@ -220,6 +260,9 @@ const DrawerController: React.FC<{ visible: boolean; onClose: () => void }> = ({
         break;
       case "directory":
         navigation.navigate("MainTabs", { screen: "Directory" });
+        break;
+      case "welcome":
+        navigation.navigate("Welcome");
         break;
     }
   };

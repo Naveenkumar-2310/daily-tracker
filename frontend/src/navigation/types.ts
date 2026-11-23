@@ -13,6 +13,7 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   PillCalendar: undefined;
+  Welcome: undefined;
 };
 
 export type RootNavigationProp = CompositeNavigationProp<
@@ -25,3 +26,4 @@ export type PillsHomeScreenProps = BottomTabScreenProps<MainTabParamList, 'Healt
 export type PetrolEntryScreenProps = BottomTabScreenProps<MainTabParamList, 'Fuel'>;
 export type DirectoryScreenProps = BottomTabScreenProps<MainTabParamList, 'Directory'>;
 export type PillCalendarScreenProps = NativeStackScreenProps<RootStackParamList, 'PillCalendar'>;
+export type WelcomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Welcome'>;

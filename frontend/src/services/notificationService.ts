@@ -70,7 +70,7 @@ export const NotificationService = {
   promptToOpenSettings(): void {
     Alert.alert(
       "Notifications Disabled 🔔",
-      "To receive your daily pill alarms, loud chimes, and reminder banners, please allow Notifications for Daily Tracker in your phone settings.",
+      "To receive your daily pill alarms, loud chimes, and reminder banners, please allow Notifications for Daily Flow in your phone settings.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -208,7 +208,7 @@ export const NotificationService = {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "🔔 Test Alarm: Daily Tracker",
+          title: "🔔 Test Alarm: Daily Flow",
           body: "Your medicine alarm & notification chime are working properly! 🎉",
           priority: Notifications.AndroidNotificationPriority.MAX,
         },
