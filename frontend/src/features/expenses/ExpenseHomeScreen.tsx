@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Text, TextInput, useTheme, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ExtendedTheme } from '../../theme/theme';
@@ -46,6 +47,7 @@ export type ViewMode = 'BANK' | 'CARD';
 
 export const ExpenseHomeScreen: React.FC = () => {
   const theme = useTheme<ExtendedTheme>();
+  const navigation = useNavigation<any>();
 
   // Date selection
   const now = new Date();
@@ -69,6 +71,14 @@ export const ExpenseHomeScreen: React.FC = () => {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
+
+  // Auto-hide bottom navigation tab bar whenever any modal is open
+  const isAnyModalOpen = addModalVisible || budgetModalVisible || sortModalVisible;
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: isAnyModalOpen ? { display: 'none' } : undefined,
+    });
+  }, [navigation, isAnyModalOpen]);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -645,6 +655,9 @@ export const ExpenseHomeScreen: React.FC = () => {
         visible={sortModalVisible}
         animationType="fade"
         transparent
+        statusBarTranslucent={true}
+        navigationBarTranslucent={true}
+        hardwareAccelerated={true}
         onRequestClose={() => setSortModalVisible(false)}
       >
         <TouchableOpacity
@@ -940,8 +953,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     padding: 20,
+    ...(Platform.OS === 'web'
+      ? ({
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 99999,
+        } as any)
+      : {}),
   },
   sortModalCard: {
     width: '100%',

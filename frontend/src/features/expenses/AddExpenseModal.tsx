@@ -73,7 +73,15 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onDismiss}>
+    <Modal
+      visible={visible}
+      animationType={Platform.OS === 'web' ? 'fade' : 'slide'}
+      transparent
+      statusBarTranslucent={true}
+      navigationBarTranslucent={true}
+      hardwareAccelerated={true}
+      onRequestClose={onDismiss}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.overlay}
@@ -328,7 +336,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
     alignItems: Platform.OS === 'web' ? 'center' : undefined,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    ...(Platform.OS === 'web'
+      ? ({
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 99999,
+        } as any)
+      : {}),
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
@@ -338,14 +356,20 @@ const styles = StyleSheet.create({
     maxWidth: Platform.OS === 'web' ? 500 : undefined,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderRadius: Platform.OS === 'web' ? 24 : undefined,
+    borderBottomLeftRadius: Platform.OS === 'web' ? 24 : 0,
+    borderBottomRightRadius: Platform.OS === 'web' ? 24 : 0,
     paddingTop: 18,
     paddingHorizontal: 18,
-    paddingBottom: Platform.OS === 'web' ? 18 : 16,
+    paddingBottom: Platform.OS === 'web' ? 20 : 28,
+    marginBottom: 0,
     maxHeight: Platform.OS === 'web' ? '90%' : '88%',
     borderWidth: 1,
     borderBottomWidth: Platform.OS === 'web' ? 1 : 0,
-    elevation: 8,
+    elevation: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
   },
   header: {
     flexDirection: 'row',
