@@ -22,6 +22,7 @@ export type NavScreenKey =
   | "pills"
   | "calendar"
   | "petrol"
+  | "assistant"
   | "directory"
   | "welcome";
 
@@ -149,6 +150,16 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 style={[
                   styles.item,
                   activeScreen === "petrol" && styles.activeItem,
+                ]}
+              />
+              <Drawer.Item
+                label="AI Assistant"
+                icon="creation"
+                active={activeScreen === "assistant"}
+                onPress={() => handleSelect("assistant")}
+                style={[
+                  styles.item,
+                  activeScreen === "assistant" && styles.activeItem,
                 ]}
               />
             </Drawer.Section>

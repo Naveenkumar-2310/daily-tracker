@@ -1,6 +1,11 @@
+import api from '../api/client/axiosInstance';
+
 declare const process: any;
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
+
+export const ask = (question: string): Promise<string> =>
+  api.post<{ answer: string }>('/assistant', { question }).then((r) => r.data.answer);
 
 export interface IMedicineItem {
   id: string;

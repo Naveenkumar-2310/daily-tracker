@@ -1,7 +1,7 @@
-import { JsonDatabase } from '../../common/database/db';
-import { getMysqlPool } from '../../common/database/mysql';
-import { IFuelLog } from './fuel-log.interface';
-import { v4 as uuidv4 } from 'uuid';
+import { JsonDatabase } from "../../common/database/db";
+import { getMysqlPool } from "../../common/database/mysql";
+import { IFuelLog } from "./fuel-log.interface";
+import { v4 as uuidv4 } from "uuid";
 
 export class FuelLogRepository {
   private db = JsonDatabase.getInstance();
@@ -9,40 +9,52 @@ export class FuelLogRepository {
   public async findAll(vehicleId?: string): Promise<IFuelLog[]> {
     const pool = getMysqlPool();
     if (pool) {
-      let sql = 'SELECT * FROM fuel_logs';
+      let sql = "SELECT * FROM fuel_logs";
       const params: any[] = [];
       if (vehicleId) {
-        sql += ' WHERE vehicleId = ?';
+        sql += " WHERE vehicleId = ?";
         params.push(vehicleId);
       }
-      sql += ' ORDER BY date DESC, createdAt DESC';
+      sql += " ORDER BY date DESC, createdAt DESC";
       const [rows]: any = await pool.query(sql, params);
       return rows;
     }
 
     const list = this.db.getData().fuelLogs;
-    const filtered = vehicleId ? list.filter((f) => f.vehicleId === vehicleId) : list;
-    return [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const filtered = vehicleId
+      ? list.filter((f) => f.vehicleId === vehicleId)
+      : list;
+    return [...filtered].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
   }
 
-  public async findLatestBefore(vehicleId: string, beforeOdometer: number): Promise<IFuelLog | null> {
+  public async findLatestBefore(
+    vehicleId: string,
+    beforeOdometer: number,
+  ): Promise<IFuelLog | null> {
     const pool = getMysqlPool();
     if (pool) {
       const [rows]: any = await pool.query(
-        'SELECT * FROM fuel_logs WHERE vehicleId = ? AND odometerKm < ? ORDER BY odometerKm DESC LIMIT 1',
-        [vehicleId, beforeOdometer]
+        "SELECT * FROM fuel_logs WHERE vehicleId = ? AND odometerKm < ? ORDER BY odometerKm DESC LIMIT 1",
+        [vehicleId, beforeOdometer],
       );
       return rows[0] || null;
     }
 
-    const list = this.db.getData().fuelLogs
-      .filter((f) => f.vehicleId === vehicleId && f.odometerKm < beforeOdometer)
+    const list = this.db
+      .getData()
+      .fuelLogs.filter(
+        (f) => f.vehicleId === vehicleId && f.odometerKm < beforeOdometer,
+      )
       .sort((a, b) => b.odometerKm - a.odometerKm);
 
     return list[0] || null;
   }
 
-  public async create(logData: Omit<IFuelLog, 'id' | 'createdAt'>): Promise<IFuelLog> {
+  public async create(
+    logData: Omit<IFuelLog, "id" | "createdAt">,
+  ): Promise<IFuelLog> {
     const newLog: IFuelLog = {
       ...logData,
       id: `fuel-${uuidv4()}`,
@@ -68,7 +80,7 @@ export class FuelLogRepository {
           newLog.imageUrl || null,
           newLog.notes || null,
           newLog.createdAt,
-        ]
+        ],
       );
       return newLog;
     }
@@ -81,7 +93,10 @@ export class FuelLogRepository {
   public async delete(id: string): Promise<boolean> {
     const pool = getMysqlPool();
     if (pool) {
-      const [res]: any = await pool.query('DELETE FROM fuel_logs WHERE id = ?', [id]);
+      const [res]: any = await pool.query(
+        "DELETE FROM fuel_logs WHERE id = ?",
+        [id],
+      );
       return res.affectedRows > 0;
     }
 

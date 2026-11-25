@@ -17,6 +17,7 @@ import { DashboardScreen } from "../features/dashboard/DashboardScreen";
 import { ExpenseHomeScreen } from "../features/expenses/ExpenseHomeScreen";
 import { PillHomeScreen } from "../features/pills/PillHomeScreen";
 import { PillCalendarScreen } from "../features/pills/PillCalendarScreen";
+import { AssistantScreen } from "../features/assistant/AssistantScreen";
 import { PetrolEntryScreen } from "../features/petrol/PetrolEntryScreen";
 import { ManageMastersScreen } from "../features/masters/ManageMastersScreen";
 import { WelcomeScreen, ONBOARDING_STORAGE_KEY } from "../features/welcome/WelcomeScreen";
@@ -45,6 +46,12 @@ const MainTabNavigator: React.FC<{
                 return {
                   title: "Daily Dashboard",
                   subtitle: "Health & Mobility Executive Overview",
+                  actions: [
+                    {
+                      icon: "creation",
+                      onPress: () => navigation.navigate("Assistant"),
+                    },
+                  ],
                 };
               case "Expenses":
                 return {
@@ -224,6 +231,19 @@ export const RootNavigator: React.FC = () => {
             ),
           })}
         />
+        <Stack.Screen
+          name="Assistant"
+          component={AssistantScreen}
+          options={({ navigation }) => ({
+            header: () => (
+              <AppHeader
+                title="AI Assistant"
+                subtitle="Ask About Pills & Mileage"
+                onBack={() => navigation.goBack()}
+              />
+            ),
+          })}
+        />
       </Stack.Navigator>
 
       {/* Side Drawer with Navigation Integration */}
@@ -257,6 +277,9 @@ const DrawerController: React.FC<{ visible: boolean; onClose: () => void }> = ({
         break;
       case "petrol":
         navigation.navigate("MainTabs", { screen: "Fuel" });
+        break;
+      case "assistant":
+        navigation.navigate("Assistant");
         break;
       case "directory":
         navigation.navigate("MainTabs", { screen: "Directory" });
