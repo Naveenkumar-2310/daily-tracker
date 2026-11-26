@@ -230,15 +230,17 @@ export const ExpenseHomeScreen: React.FC = () => {
 
   // Compute running balance & apply filters & sorting
   const processedTransactions = useMemo(() => {
-    // 1. Calculate running balances in chronological order
-    const chrono = [...expenses].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    let currentBalance = 0;
+    // 1. Calculate remaining target balance in chronological order
+    const chrono = [...expenses].sort((a, b) => {
+      const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+    });
+    let currentBalance = summary?.overallBudget || 0;
     const balanceMap = new Map<string, number>();
 
     for (const tx of chrono) {
-      if (tx.type === 'INCOME') {
-        currentBalance += tx.amount;
-      } else if (tx.type === 'EXPENSE') {
+      if (tx.type === 'EXPENSE') {
         currentBalance -= tx.amount;
       }
       balanceMap.set(tx.id, currentBalance);
@@ -295,7 +297,7 @@ export const ExpenseHomeScreen: React.FC = () => {
     });
 
     return list;
-  }, [expenses, activeFilter, searchQuery, sortBy]);
+  }, [expenses, activeFilter, searchQuery, sortBy, summary?.overallBudget]);
 
   const activeSortLabel = sortOptions.find((s) => s.key === sortBy)?.label || 'Date: Newest';
 
@@ -335,17 +337,9 @@ export const ExpenseHomeScreen: React.FC = () => {
             </View>
           ) : (
             <>
-              {/* Premium Financial Metrics Grid */}
+              {/* Compact Financial Metrics Row */}
               <View style={styles.metricsGrid}>
                 <View style={styles.metricRow}>
-                  <PremiumMetricCard
-                    title="Total Income"
-                    amount={summary?.totalIncome || 0}
-                    icon="arrow-bottom-left"
-                    accentColor="#059669"
-                    trendText="Inflow"
-                    trendPositive={true}
-                  />
                   <PremiumMetricCard
                     title="Total Expenses"
                     amount={summary?.totalExpense || 0}
@@ -354,18 +348,8 @@ export const ExpenseHomeScreen: React.FC = () => {
                     trendText="Outflow"
                     trendPositive={false}
                   />
-                </View>
-
-                <View style={styles.metricRow}>
                   <PremiumMetricCard
-                    title="Net Savings"
-                    amount={summary?.netSavings || 0}
-                    subtitle={`${summary?.savingsRatePercentage || 0}% Savings Rate`}
-                    icon="wallet-outline"
-                    accentColor="#4F46E5"
-                  />
-                  <PremiumMetricCard
-                    title="Budget Safe"
+                    title="Budget Left"
                     amount={summary?.remainingBudget || 0}
                     subtitle={`${summary?.budgetSpentPercentage || 0}% Used`}
                     icon="shield-check-outline"
@@ -395,44 +379,6 @@ export const ExpenseHomeScreen: React.FC = () => {
                 spent={summary?.totalExpense || 0}
                 budget={summary?.overallBudget || 25000}
               />
-
-              {/* Category Spending Breakdown */}
-              {Boolean(summary && summary.categoryBreakdown && summary.categoryBreakdown.length > 0) ? (
-                <View style={styles.categoriesSection}>
-                  <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
-                    Top Spending by Category
-                  </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-                    {summary!.categoryBreakdown.map((cat) => (
-                      <View
-                        key={cat.categoryId}
-                        style={[
-                          styles.catBreakdownCard,
-                          {
-                            backgroundColor: theme.colors.cardBg || theme.colors.surface,
-                            borderColor: theme.colors.cardBorder || theme.colors.outline,
-                          },
-                        ]}
-                      >
-                        <View style={[styles.catIconBox, { backgroundColor: `${cat.color}18` }]}>
-                          <MaterialCommunityIcons name={(cat.icon as any) || 'tag'} size={20} color={cat.color} />
-                        </View>
-                        <Text variant="bodySmall" style={{ fontWeight: '700', color: theme.colors.onSurface }} numberOfLines={1}>
-                          {cat.categoryName}
-                        </Text>
-                        <Text variant="titleSmall" style={{ fontWeight: '800', color: theme.colors.onSurface }}>
-                          ₹{cat.amount.toLocaleString('en-IN')}
-                        </Text>
-                        <View style={[styles.pctBadge, { backgroundColor: `${cat.color}15` }]}>
-                          <Text style={{ fontSize: 10, fontWeight: '700', color: cat.color }}>
-                            {cat.percentage}% of spend
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              ) : null}
 
               {/* Search & Ledger Controls Bar */}
               <View style={styles.searchBarWrapper}>

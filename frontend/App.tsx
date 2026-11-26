@@ -12,11 +12,13 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { GlobalUiProvider } from './src/context/GlobalUiContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { LaunchSplash } from './src/components/common/LaunchSplash';
 import { queryClient } from './src/api/queryClient';
 import { NotificationService } from './src/services/notificationService';
 
 function MainApp() {
   const { theme } = useAppTheme();
+  const [showLaunchIntro, setShowLaunchIntro] = React.useState(true);
 
   React.useEffect(() => {
     NotificationService.setupPermissionsAndChannels();
@@ -58,6 +60,9 @@ function MainApp() {
         <NavigationContainer theme={navTheme}>
           <RootNavigator />
         </NavigationContainer>
+        {showLaunchIntro && (
+          <LaunchSplash onFinish={() => setShowLaunchIntro(false)} />
+        )}
       </GlobalUiProvider>
     </PaperProvider>
   );

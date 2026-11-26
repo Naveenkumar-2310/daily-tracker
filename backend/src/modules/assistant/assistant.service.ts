@@ -66,6 +66,54 @@ async function runTool(name: string, input: Record<string, any> = {}) {
   }
 }
 
+const GEMINI_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-2.5-flash-lite",
+];
+
+async function generateWithFallback(
+  ai: GoogleGenAI,
+  contents: Content[],
+  today: string,
+) {
+  let lastError: any;
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: `You are a helpful assistant inside a pill and petrol tracker app. Today is ${today}. Use tools to get real data. Never guess. Answer briefly.`,
+            tools: [{ functionDeclarations }],
+          },
+        });
+      } catch (err: any) {
+        lastError = err;
+        const status = err?.status || err?.statusCode;
+        // On 429 (quota) or 404 (retired), immediately try the next model
+        if (status === 429 || status === 404) {
+          break;
+        }
+        // On 503 (temporary high demand), brief retry then fall back to next model
+        if (status === 503) {
+          if (attempt === 0) {
+            await new Promise((r) => setTimeout(r, 1000));
+            continue;
+          }
+          break;
+        }
+        throw err;
+      }
+    }
+  }
+  throw lastError;
+}
+
 // 3) The Loop (orchestration)
 export async function askTracker(question: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -83,27 +131,7 @@ export async function askTracker(question: string): Promise<string> {
   ];
 
   for (let step = 0; step < 5; step++) {
-    let res;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        res = await ai.models.generateContent({
-          model: "gemini-3.8-flash",
-          contents,
-          config: {
-            systemInstruction: `You are a helpful assistant inside a pill and petrol tracker app. Today is ${today}. Use tools to get real data. Never guess. Answer briefly.`,
-            tools: [{ functionDeclarations }],
-          },
-        });
-        break;
-      } catch (err: any) {
-        const status = err?.status || err?.statusCode;
-        if ((status === 503 || status === 429) && attempt < 2) {
-          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
-          continue;
-        }
-        throw err;
-      }
-    }
+    const res = await generateWithFallback(ai, contents, today);
     if (!res) break;
 
     const calls = res.functionCalls;
