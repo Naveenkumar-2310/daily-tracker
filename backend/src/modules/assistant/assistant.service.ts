@@ -1,21 +1,23 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI, Type, FunctionDeclaration, Content } from "@google/genai";
 import { PillLogService } from "../pill-log/pill-log.service";
 import { FuelLogService } from "../fuel-log/fuel-log.service";
 
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY Automatically
 const pillLogService = new PillLogService();
 const fuelLogService = new FuelLogService();
 
-// 1) The Menu : What Claude is allowed to ask for
-const tools: Anthropic.Tool[] = [
+// 1) The Menu: What Gemini is allowed to ask for
+const functionDeclarations: FunctionDeclaration[] = [
   {
     name: "get_pill_logs",
     description:
       "Get which days the user took or missed a medicine in a month.",
-    input_schema: {
-      type: "object",
+    parameters: {
+      type: Type.OBJECT,
       properties: {
-        month: { type: "string", description: "Format YYYY-MM, e.g. 2026-11" },
+        month: {
+          type: Type.STRING,
+          description: "Format YYYY-MM, e.g. 2026-11",
+        },
       },
       required: ["month"],
     },
@@ -23,11 +25,11 @@ const tools: Anthropic.Tool[] = [
   {
     name: "log_pill_taken",
     description: "Mark the medicine as taken for a date.",
-    input_schema: {
-      type: "object",
+    parameters: {
+      type: Type.OBJECT,
       properties: {
-        medicineId: { type: "string" },
-        date: { type: "string", description: "YYYY-MM-DD" },
+        medicineId: { type: Type.STRING },
+        date: { type: Type.STRING, description: "YYYY-MM-DD" },
       },
       required: ["medicineId", "date"],
     },
@@ -35,12 +37,15 @@ const tools: Anthropic.Tool[] = [
   {
     name: "get_fuel_logs",
     description: "Get recent petrol fill-ups with distance and mileage (km/L).",
-    input_schema: { type: "object", properties: {} },
+    parameters: {
+      type: Type.OBJECT,
+      properties: {},
+    },
   },
 ];
 
-//  2) The KITCHEN : Connect Each tool name to your real Code
-async function runTool(name: string, input: any) {
+// 2) The Kitchen: Connect each tool name to your real code
+async function runTool(name: string, input: Record<string, any> = {}) {
   try {
     switch (name) {
       case "get_pill_logs":
@@ -61,43 +66,71 @@ async function runTool(name: string, input: any) {
   }
 }
 
-// 3) The LOOP (orchestration)
+// 3) The Loop (orchestration)
 export async function askTracker(question: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY is missing. Add GEMINI_API_KEY=... to backend/.env",
+    );
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const today = new Date().toISOString().slice(0, 10);
-  const messages: Anthropic.MessageParam[] = [
-    { role: "user", content: question },
+
+  const contents: Content[] = [
+    { role: "user", parts: [{ text: question }] },
   ];
 
   for (let step = 0; step < 5; step++) {
-    // safety limit: max 5 rounds
-    const res = await client.messages.create({
-      model: "claude-sonnet-5-5",
-      max_tokens: 1024,
-      system: `You are a helpful assistant inside a pill and petrol tracker app. Today is ${today}. Use tools to get real data. Never guess. Answer briefly.`,
-      tools,
-      messages,
-    });
-
-    // Claude is done: return the final text
-    if (res.stop_reason !== "tool_use") {
-      const text = res.content.find((b) => b.type === "text");
-      return text && text.type === "text" ? text.text : "";
-    }
-
-    // Claude asked for tools: run them and send the results back
-    messages.push({ role: "assistant", content: res.content });
-    const results: Anthropic.ToolResultBlockParam[] = [];
-    for (const block of res.content) {
-      if (block.type === "tool_use") {
-        const output = await runTool(block.name, block.input);
-        results.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: JSON.stringify(output),
+    let res;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        res = await ai.models.generateContent({
+          model: "gemini-3.8-flash",
+          contents,
+          config: {
+            systemInstruction: `You are a helpful assistant inside a pill and petrol tracker app. Today is ${today}. Use tools to get real data. Never guess. Answer briefly.`,
+            tools: [{ functionDeclarations }],
+          },
         });
+        break;
+      } catch (err: any) {
+        const status = err?.status || err?.statusCode;
+        if ((status === 503 || status === 429) && attempt < 2) {
+          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+          continue;
+        }
+        throw err;
       }
     }
-    messages.push({ role: "user", content: results });
+    if (!res) break;
+
+    const calls = res.functionCalls;
+    if (!calls || calls.length === 0) {
+      return res.text || "";
+    }
+
+    // Append model's tool-call turn
+    if (res.candidates?.[0]?.content) {
+      contents.push(res.candidates[0].content);
+    }
+
+    // Execute requested tools and send results back
+    const responseParts = [];
+    for (const call of calls) {
+      const toolName = call.name || "";
+      const output = await runTool(toolName, (call.args as Record<string, any>) || {});
+      responseParts.push({
+        functionResponse: {
+          name: toolName,
+          response: { result: output },
+        },
+      });
+    }
+
+    contents.push({ role: "user", parts: responseParts });
   }
+
   return "Sorry, that took too many steps. Please try again.";
 }
