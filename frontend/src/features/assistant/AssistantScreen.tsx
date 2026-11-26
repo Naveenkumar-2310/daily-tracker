@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
   Keyboard,
 } from "react-native";
 import { Text, useTheme, ActivityIndicator } from "react-native-paper";
@@ -15,6 +17,12 @@ import { AppButton } from "../../components/common/AppButton";
 import { AppCard } from "../../components/common/AppCard";
 import { ask } from "../../services/api";
 
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant" | "error";
+  text: string;
+}
+
 const SUGGESTED_PROMPTS = [
   "Did I take all my pills this month?",
   "What is my recent petrol mileage?",
@@ -23,261 +31,297 @@ const SUGGESTED_PROMPTS = [
 
 export const AssistantScreen: React.FC = () => {
   const theme = useTheme<ExtendedTheme>();
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
   const [question, setQuestion] = useState("");
-  const [askedQuestion, setAskedQuestion] = useState<string | null>(null);
-  const [answer, setAnswer] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setAndroidKeyboardHeight(e.endCoordinates?.height || 0);
+      scrollToBottom();
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setAndroidKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 80);
+  };
 
   const handleAsk = async (promptOverride?: string) => {
     const query = (promptOverride ?? question).trim();
     if (!query || loading) return;
 
     Keyboard.dismiss();
-    if (promptOverride) {
-      setQuestion(promptOverride);
-    }
+    setQuestion("");
 
+    const userMsg: ChatMessage = {
+      id: `u-${Date.now()}`,
+      role: "user",
+      text: query,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
-    setError(null);
-    setAskedQuestion(query);
+    scrollToBottom();
 
     try {
       const response = await ask(query);
-      setAnswer(response || "No response returned from the assistant.");
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Unable to reach the assistant right now. Please try again.";
-      setError(message);
+      const botMsg: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: "assistant",
+        text: response || "No response returned from the assistant.",
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { id: `e-${Date.now()}`, role: "error", text: "Please retry" },
+      ]);
     } finally {
       setLoading(false);
+      scrollToBottom();
     }
   };
 
-  const handleClear = () => {
-    setQuestion("");
-    setAskedQuestion(null);
-    setAnswer(null);
-    setError(null);
-  };
-
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <ResponsiveContainer maxWidth={760}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Editorial Hero Header */}
-          <View
-            style={[
-              styles.heroBanner,
-              {
-                backgroundColor: theme.colors.primaryContainer,
-                borderColor: theme.colors.cardBorder || theme.colors.outline,
-              },
+    <KeyboardAvoidingView
+      style={[styles.screen, { backgroundColor: theme.colors.background }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
+      <ResponsiveContainer maxWidth={780}>
+        <View style={styles.flexContainer}>
+          {/* Chat Thread */}
+          <ScrollView
+            ref={scrollRef}
+            style={styles.chatScroll}
+            contentContainerStyle={[
+              styles.chatContent,
+              messages.length === 0 && styles.emptyChatContent,
             ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View
-              style={[
-                styles.heroBadge,
-                { backgroundColor: theme.colors.primary },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="creation"
-                size={20}
-                color={theme.colors.onPrimary}
-              />
-            </View>
-            <View style={styles.heroTextWrap}>
-              <Text
-                variant="titleLarge"
-                style={[
-                  styles.heroTitle,
-                  { color: theme.colors.onPrimaryContainer },
-                ]}
-              >
-                Daily Flow Assistant
-              </Text>
-              <Text
-                variant="bodySmall"
-                style={[
-                  styles.heroSubtitle,
-                  { color: theme.colors.onPrimaryContainer },
-                ]}
-              >
-                Ask anything about your pill adherence, intake history, or fuel
-                mileage.
-              </Text>
-            </View>
-          </View>
-
-          {/* Prompt Composer Card */}
-          <AppCard
-            title="Ask a Question"
-            subtitle="Powered by your live tracker records"
-            leftIcon={
-              <View
-                style={[
-                  styles.iconPill,
-                  { backgroundColor: theme.colors.primaryContainer },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="chat-processing-outline"
-                  size={18}
-                  color={theme.colors.primary}
-                />
-              </View>
-            }
-            style={styles.composerCard}
-          >
-            <AppTextField
-              label="Your question"
-              placeholder="e.g. How many pills did I take this month?"
-              value={question}
-              onChangeText={(text) => {
-                setQuestion(text);
-                if (error) setError(null);
-              }}
-              multiline
-              numberOfLines={3}
-              returnKeyType="send"
-              onSubmitEditing={() => handleAsk()}
-              errorText={error ?? undefined}
-              containerStyle={styles.inputContainer}
-            />
-
-            {/* Quick Suggestion Chips */}
-            <View style={styles.suggestionsWrap}>
-              {SUGGESTED_PROMPTS.map((prompt) => (
-                <TouchableOpacity
-                  key={prompt}
-                  activeOpacity={0.75}
-                  disabled={loading}
-                  onPress={() => handleAsk(prompt)}
-                  style={[
-                    styles.suggestionChip,
-                    {
-                      backgroundColor: theme.colors.surfaceVariant,
-                      borderColor: theme.colors.cardBorder || theme.colors.outline,
-                    },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name="lightning-bolt-outline"
-                    size={13}
-                    color={theme.colors.primary}
-                  />
-                  <Text
-                    style={[
-                      styles.suggestionText,
-                      { color: theme.colors.onSurface },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {prompt}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.actionRow}>
-              {(answer || error || question.length > 0) && (
-                <AppButton
-                  mode="outlined"
-                  onPress={handleClear}
-                  disabled={loading}
-                  style={styles.clearButton}
-                >
-                  Clear
-                </AppButton>
-              )}
-              <AppButton
-                mode="contained"
-                icon={loading ? undefined : "send"}
-                onPress={() => handleAsk()}
-                disabled={loading || !question.trim()}
-                loading={loading}
-                style={styles.askButton}
-              >
-                {loading ? "Thinking..." : "Ask Assistant"}
-              </AppButton>
-            </View>
-          </AppCard>
-
-          {/* Loading State */}
-          {loading && (
-            <AppCard style={styles.responseCard}>
-              <View style={styles.loadingRow}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-                <View style={styles.loadingTextWrap}>
-                  <Text
-                    variant="titleSmall"
-                    style={{ color: theme.colors.onSurface, fontWeight: "700" }}
-                  >
-                    Analyzing your tracker data
-                  </Text>
-                  <Text
-                    variant="bodySmall"
-                    style={{ color: theme.colors.subText, marginTop: 2 }}
-                  >
-                    Checking pill logs and fuel records...
-                  </Text>
-                </View>
-              </View>
-            </AppCard>
-          )}
-
-          {/* Answer Card */}
-          {!loading && answer !== null && (
-            <AppCard
-              title="Assistant Response"
-              subtitle={askedQuestion ? `“${askedQuestion}”` : undefined}
-              leftIcon={
+            {messages.length === 0 ? (
+              <View style={styles.emptyState}>
                 <View
                   style={[
-                    styles.iconPill,
-                    { backgroundColor: theme.colors.secondaryContainer },
+                    styles.emptyIconWrap,
+                    { backgroundColor: theme.colors.primaryContainer },
                   ]}
                 >
                   <MaterialCommunityIcons
-                    name="robot-happy-outline"
-                    size={18}
-                    color={theme.colors.secondary}
+                    name="creation"
+                    size={28}
+                    color={theme.colors.primary}
                   />
                 </View>
-              }
-              style={styles.responseCard}
-            >
-              <View
-                style={[
-                  styles.answerSurface,
-                  {
-                    backgroundColor: theme.colors.metricBoxBg,
-                    borderColor: theme.colors.cardBorder || theme.colors.outline,
-                  },
-                ]}
-              >
                 <Text
-                  selectable
+                  variant="titleMedium"
                   style={[
-                    styles.answerText,
+                    styles.emptyTitle,
                     { color: theme.colors.onSurface },
                   ]}
                 >
-                  {answer}
+                  How can I help today?
                 </Text>
+                <Text
+                  variant="bodySmall"
+                  style={[styles.emptySub, { color: theme.colors.subText }]}
+                >
+                  Ask about your pill schedule, adherence, or fuel mileage.
+                </Text>
+
+                <View style={styles.suggestionsWrap}>
+                  {SUGGESTED_PROMPTS.map((prompt) => (
+                    <TouchableOpacity
+                      key={prompt}
+                      activeOpacity={0.75}
+                      onPress={() => handleAsk(prompt)}
+                      style={[
+                        styles.suggestionChip,
+                        {
+                          backgroundColor: theme.colors.surface,
+                          borderColor:
+                            theme.colors.cardBorder || theme.colors.outline,
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name="lightning-bolt-outline"
+                        size={14}
+                        color={theme.colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.suggestionText,
+                          { color: theme.colors.onSurface },
+                        ]}
+                      >
+                        {prompt}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-            </AppCard>
-          )}
-        </ScrollView>
+            ) : (
+              messages.map((msg) => {
+                if (msg.role === "user") {
+                  return (
+                    <View key={msg.id} style={styles.userRow}>
+                      <View
+                        style={[
+                          styles.userBubble,
+                          { backgroundColor: theme.colors.primary },
+                        ]}
+                      >
+                        <Text
+                          selectable
+                          style={[
+                            styles.userText,
+                            { color: theme.colors.onPrimary },
+                          ]}
+                        >
+                          {msg.text}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                }
+
+                if (msg.role === "error") {
+                  return (
+                    <AppCard
+                      key={msg.id}
+                      style={[
+                        styles.assistantCard,
+                        {
+                          backgroundColor: theme.colors.urgentBg,
+                          borderColor: theme.colors.error,
+                        },
+                      ]}
+                    >
+                      <View style={styles.errorRow}>
+                        <MaterialCommunityIcons
+                          name="alert-circle-outline"
+                          size={18}
+                          color={theme.colors.error}
+                        />
+                        <Text
+                          selectable
+                          style={[
+                            styles.errorText,
+                            { color: theme.colors.urgentText },
+                          ]}
+                        >
+                          {msg.text}
+                        </Text>
+                      </View>
+                    </AppCard>
+                  );
+                }
+
+                return (
+                  <AppCard
+                    key={msg.id}
+                    leftIcon={
+                      <View
+                        style={[
+                          styles.aiAvatar,
+                          { backgroundColor: theme.colors.primaryContainer },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="creation"
+                          size={15}
+                          color={theme.colors.primary}
+                        />
+                      </View>
+                    }
+                    title="Assistant"
+                    style={styles.assistantCard}
+                  >
+                    <Text
+                      selectable
+                      style={[
+                        styles.answerText,
+                        { color: theme.colors.onSurface },
+                      ]}
+                    >
+                      {msg.text}
+                    </Text>
+                  </AppCard>
+                );
+              })
+            )}
+
+            {loading && (
+              <AppCard style={styles.assistantCard}>
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <Text
+                    variant="bodyMedium"
+                    style={[
+                      styles.loadingText,
+                      { color: theme.colors.subText },
+                    ]}
+                  >
+                    Thinking...
+                  </Text>
+                </View>
+              </AppCard>
+            )}
+          </ScrollView>
+
+          {/* Bottom Docked Input Bar */}
+          <View
+            style={[
+              styles.bottomBar,
+              {
+                backgroundColor: theme.colors.surface,
+                borderTopColor: theme.colors.cardBorder || theme.colors.outline,
+                marginBottom: Platform.OS === "android" ? androidKeyboardHeight : 0,
+              },
+            ]}
+          >
+            <View style={styles.inputRow}>
+              <AppTextField
+                placeholder="Ask anything..."
+                value={question}
+                onChangeText={setQuestion}
+                maxLength={500}
+                returnKeyType="send"
+                onSubmitEditing={() => handleAsk()}
+                containerStyle={styles.textFieldContainer}
+                style={styles.textField}
+              />
+              <AppButton
+                mode="contained"
+                icon="send"
+                onPress={() => handleAsk()}
+                disabled={loading || !question.trim()}
+                loading={loading}
+                style={styles.sendButton}
+                contentStyle={styles.sendButtonContent}
+              >
+                Send
+              </AppButton>
+            </View>
+          </View>
+        </View>
       </ResponsiveContainer>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -285,105 +329,140 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 36,
-  },
-  heroBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 18,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginBottom: 14,
-  },
-  heroBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-  },
-  heroTextWrap: {
+  flexContainer: {
     flex: 1,
   },
-  heroTitle: {
-    fontWeight: "800",
-    letterSpacing: -0.3,
+  chatScroll: {
+    flex: 1,
   },
-  heroSubtitle: {
-    marginTop: 3,
-    opacity: 0.85,
-    lineHeight: 18,
+  chatContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 20,
   },
-  composerCard: {
-    borderRadius: 20,
-  },
-  iconPill: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: "center",
+  emptyChatContent: {
+    flexGrow: 1,
     justifyContent: "center",
   },
-  inputContainer: {
-    marginBottom: 10,
+  emptyState: {
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  emptyIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  emptyTitle: {
+    fontWeight: "800",
+    letterSpacing: -0.3,
+    textAlign: "center",
+  },
+  emptySub: {
+    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 20,
   },
   suggestionsWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    width: "100%",
     gap: 8,
-    marginBottom: 14,
   },
   suggestionChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 14,
     borderWidth: 1,
   },
   suggestionText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
+    flex: 1,
   },
-  actionRow: {
+  userRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    marginVertical: 6,
+  },
+  userBubble: {
+    maxWidth: "82%",
+    paddingHorizontal: 15,
+    paddingVertical: 11,
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+  },
+  userText: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "500",
+  },
+  assistantCard: {
+    borderRadius: 18,
+    marginVertical: 6,
+  },
+  aiAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
     alignItems: "center",
-    gap: 10,
-  },
-  clearButton: {
-    minWidth: 88,
-  },
-  askButton: {
-    flex: 1,
-  },
-  responseCard: {
-    marginTop: 10,
-    borderRadius: 20,
-  },
-  loadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  loadingTextWrap: {
-    marginLeft: 14,
-    flex: 1,
-  },
-  answerSurface: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
+    justifyContent: "center",
   },
   answerText: {
     fontSize: 15,
     lineHeight: 23,
-    letterSpacing: 0.1,
+  },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 4,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13.5,
+    lineHeight: 19,
+  },
+  bottomBar: {
+    borderTopWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === "ios" ? 18 : 10,
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  textFieldContainer: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  textField: {
+    height: 48,
+    textAlignVertical: "center",
+  },
+  sendButton: {
+    marginVertical: 0,
+    borderRadius: 12,
+    height: 48,
+    justifyContent: "center",
+  },
+  sendButtonContent: {
+    height: 48,
   },
 });
-

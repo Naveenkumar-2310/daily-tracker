@@ -151,17 +151,18 @@ export const DashboardScreen: React.FC = () => {
   });
 
   return (
-    <AppKeyboardWrapper
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={["#D97706", "#4F46E5"]}
-        />
-      }
-    >
+    <View style={[styles.screenWrapper, { backgroundColor: theme.colors.background }]}>
+      <AppKeyboardWrapper
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#D97706", "#4F46E5"]}
+          />
+        }
+      >
       {/* Executive Welcome Banner */}
       <View style={styles.welcomeBanner}>
         <View>
@@ -977,6 +978,29 @@ export const DashboardScreen: React.FC = () => {
         )}
       </AppCard>
     </AppKeyboardWrapper>
+
+      {/* Floating AI Assistant Button */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate("Assistant")}
+        style={[
+          styles.aiFab,
+          {
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary,
+          },
+        ]}
+      >
+        <MaterialCommunityIcons
+          name="creation"
+          size={20}
+          color={theme.colors.onPrimary}
+        />
+        <Text style={[styles.aiFabText, { color: theme.colors.onPrimary }]}>
+          Ask AI
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -1291,5 +1315,28 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: "100%",
     borderRadius: 3,
+  },
+  screenWrapper: {
+    flex: 1,
+  },
+  aiFab: {
+    position: "absolute",
+    right: 18,
+    bottom: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderRadius: 999,
+    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+  },
+  aiFabText: {
+    fontSize: 13.5,
+    fontWeight: "800",
+    letterSpacing: 0.2,
   },
 });
